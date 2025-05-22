@@ -1,0 +1,132 @@
+CRITICAL - 2025-05-22 14:39:25 --> ErrorException: Undefined variable $sidebar
+[Method: GET, Route: /]
+in APPPATH\Views\layout\template.php on line 14.
+ 1 APPPATH\Views\layout\template.php(14): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined variable $sidebar', 'C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php', 14)
+ 2 SYSTEMPATH\View\View.php(224): include('C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('layout/template.php', [], true)
+ 5 APPPATH\Controllers\Home.php(10): view('layout/template.php', [...])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:39:40 --> ErrorException: Undefined variable $sidebar
+[Method: GET, Route: /]
+in APPPATH\Views\layout\template.php on line 14.
+ 1 APPPATH\Views\layout\template.php(14): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined variable $sidebar', 'C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php', 14)
+ 2 SYSTEMPATH\View\View.php(224): include('C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('layout/template', [], true)
+ 5 APPPATH\Controllers\Home.php(10): view('layout/template', [...])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:39:41 --> ErrorException: Undefined variable $sidebar
+[Method: GET, Route: /]
+in APPPATH\Views\layout\template.php on line 14.
+ 1 APPPATH\Views\layout\template.php(14): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined variable $sidebar', 'C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php', 14)
+ 2 SYSTEMPATH\View\View.php(224): include('C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('layout/template', [], true)
+ 5 APPPATH\Controllers\Home.php(10): view('layout/template', [...])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:39:41 --> ErrorException: Undefined variable $sidebar
+[Method: GET, Route: /]
+in APPPATH\Views\layout\template.php on line 14.
+ 1 APPPATH\Views\layout\template.php(14): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined variable $sidebar', 'C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php', 14)
+ 2 SYSTEMPATH\View\View.php(224): include('C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('layout/template', [], true)
+ 5 APPPATH\Controllers\Home.php(10): view('layout/template', [...])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:39:48 --> ErrorException: Undefined variable $sidebar
+[Method: GET, Route: /]
+in APPPATH\Views\layout\template.php on line 14.
+ 1 APPPATH\Views\layout\template.php(14): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined variable $sidebar', 'C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php', 14)
+ 2 SYSTEMPATH\View\View.php(224): include('C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('layout/template', [], true)
+ 5 APPPATH\Controllers\Home.php(10): view('layout/template', [])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:39:49 --> ErrorException: Undefined variable $sidebar
+[Method: GET, Route: /]
+in APPPATH\Views\layout\template.php on line 14.
+ 1 APPPATH\Views\layout\template.php(14): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined variable $sidebar', 'C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php', 14)
+ 2 SYSTEMPATH\View\View.php(224): include('C:\\laragon\\www\\project_ippl\\app\\Views\\layout\\template.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('layout/template', [], true)
+ 5 APPPATH\Controllers\Home.php(10): view('layout/template', [])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:41:00 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "dosen/dashbord.php"
+[Method: GET, Route: /]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('dosen/dashbord.php')
+ 2 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('dosen/dashbord', [], true)
+ 3 APPPATH\Controllers\Home.php(9): view('dosen/dashbord')
+ 4 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 5 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 6 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:43:02 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "dosen/dashbord.php"
+[Method: GET, Route: /]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('dosen/dashbord.php')
+ 2 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('dosen/dashbord', [], true)
+ 3 APPPATH\Controllers\Home.php(9): view('dosen/dashbord')
+ 4 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 5 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 6 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:43:03 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "dosen/dashbord.php"
+[Method: GET, Route: /]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('dosen/dashbord.php')
+ 2 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('dosen/dashbord', [], true)
+ 3 APPPATH\Controllers\Home.php(9): view('dosen/dashbord')
+ 4 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 5 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 6 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+CRITICAL - 2025-05-22 14:44:53 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "dosen/dashbord.php"
+[Method: GET, Route: /]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('dosen/dashbord.php')
+ 2 SYSTEMPATH\Common.php(1173): CodeIgniter\View\View->render('dosen/dashbord', [], true)
+ 3 APPPATH\Controllers\Home.php(9): view('dosen/dashbord')
+ 4 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Home->index()
+ 5 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 6 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH\Boot.php(334): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))

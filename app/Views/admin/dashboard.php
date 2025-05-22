@@ -1,13 +1,6 @@
 <?= $this->extend('layout/main_template') ?>
 <?= $this->section('content') ?>
 
-<style>
-    .main-card {
-        background-color: #f7f7f7;
-        border-radius: 16px;
-        padding: 2rem;
-    }
-</style>
 
 <div class="main-card">
     <h3 class="mb-4">Dashboard Admin</h3>
