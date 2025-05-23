@@ -12,12 +12,12 @@
       <div class="logo">LOGO</div>
     </div>
     <div class="sidebar-menu">
-      <ul class="menu">
-        <li><a href="/admin/dashboard" class="sidebar-link"><i class="bi bi-grid-fill"></i> <span>Beranda</span></a></li>
-        <li><a href="/admin/manage-dosen" class="sidebar-link"><i class="bi bi-person-fill"></i> <span>Manage Dosen</span></a></li>
-        <li><a href="/admin/manage-mahasiswa" class="sidebar-link"><i class="bi bi-book-fill"></i> <span>Manage Mhs</span></a></li>
-        <li><a href="/admin/monitoring" class="sidebar-link"><i class="bi bi-pencil-fill"></i> <span>Monitoring</span></a></li>
-      </ul>
+        <ul class="menu">
+      <li><a href="/dosen/dashboard" class="sidebar-link"><i class="bi bi-grid-fill"></i> <span>Beranda</span></a></li>
+      <li><a href="/dosen/listkelas" class="sidebar-link"><i class="bi bi-person-fill"></i> <span>Buat kelas Baru</span></a></li>
+      <li><a href="/dosen/listAbsensi" class="sidebar-link"><i class="bi bi-book-fill"></i> <span>Buat sesi Absensi</span></a></li>
+      <li><a href="dosen/monitoring" class="sidebar-link"><i class="bi bi-pencil-fill"></i> <span>Monitoring</span></a></li>
+        </ul>
     </div>
   </div>
 </div>

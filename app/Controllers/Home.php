@@ -10,4 +10,11 @@ class Home extends BaseController
             'sidebar' => 'layout/dosen_sidebar'
         ]);
     }
+    public function kelas_baru()
+    {
+    return view('dosen/kelas_baru', [
+        'title' => 'Buat Kelas Baru',
+        'sidebar' => 'layout/dosen_sidebar',
+    ]);
+}
 }
