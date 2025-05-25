@@ -16,7 +16,7 @@
       <li><a href="/dosen/dashboard" class="sidebar-link"><i class="bi bi-grid-fill"></i> <span>Beranda</span></a></li>
       <li><a href="/dosen/listkelas" class="sidebar-link"><i class="bi bi-person-fill"></i> <span>Buat kelas Baru</span></a></li>
       <li><a href="/dosen/listAbsensi" class="sidebar-link"><i class="bi bi-book-fill"></i> <span>Buat sesi Absensi</span></a></li>
-      <li><a href="dosen/monitoring" class="sidebar-link"><i class="bi bi-pencil-fill"></i> <span>Monitoring</span></a></li>
+      <li><a href="/dosen/monitoring" class="sidebar-link"><i class="bi bi-pencil-fill"></i> <span>Monitoring</span></a></li>
         </ul>
     </div>
   </div>

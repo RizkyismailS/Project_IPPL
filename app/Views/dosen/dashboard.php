@@ -1,17 +1,11 @@
 <?= $this->extend('layout/template') ?>
 <?= $this->section('content') ?>
+<?php
+  $breadcrumb = 'Absensi';
+  $pageTitle = 'List Absensi';
+  echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
+?>
 
-
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="#">pages</a></li>
-            <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
-        </ol>
-    </nav>
-
-<div class="page-heading">
-        <h3>Main Dashboard</h3>
-    </div>
 
     <div class="page-content">
         <section class="row">
@@ -22,11 +16,8 @@
                         <div class="card">
                             <div class="card-body px-3 py-4-5">
                                 <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="stats-icon purple">
-                                            <i class="iconly-boldHome"></i>
-                                        </div>
-                                    </div>
+                                    
+                                    <!-- jumlah kelas -->
                                     <div class="col-md-8">
                                         <h6 class="text-muted font-semibold">Jumlah Kelas</h6>
                                         <h6 class="font-extrabold mb-0">5</h6>
@@ -41,7 +32,7 @@
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="stats-icon blue">
-                                            <i class="iconly-boldUser"></i>
+                                            <i class="fas fa-user-check fa-lg text-white"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-8">
@@ -58,7 +49,7 @@
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="stats-icon red">
-                                            <i class="iconly-boldPaper"></i>
+                                            <i class="fas fa-clipboard fa-lg text-white"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-8">
@@ -70,22 +61,23 @@
                         </div>
                     </div>
                 <div class="col-6 col-lg-3 col-md-6">
-                        <div class="card">
-                            <div class="card-body px-3 py-4-5">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="stats-icon blue">
-                                            <i class="iconly-boldUser"></i>
-                                        </div>
+                    <div class="card">
+                        <div class="card-body px-3 py-4-5">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="stats-icon blue">
+                                        <i class="fas fa-file-alt fa-lg text-white"></i>
                                     </div>
-                                    <div class="col-md-8">
-                                        <h6 class="text-muted font-semibold">laporan kehadiran</h6>
-                                        <h6 class="font-extrabold mb-0">Mahasiswa</h6>
-                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <h6 class="text-muted font-semibold">Laporan Kehadiran</h6>
+                                    <h6 class="font-extrabold mb-0">Mahasiswa</h6>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+
 
                 <!-- Statistik dan Chart -->
                 <!-- CHART ROW: Line + Bar chart -->
@@ -117,7 +109,7 @@
 
 <div class="row">
     <!-- Tabel Absensi -->
-    <div class="col-lg-7">
+    <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
                 <h4>Absensi Kelas</h4>
@@ -148,6 +140,7 @@
                             <td>12 Jun 2025</td>
                             <td><span class="badge bg-danger">Tidak Aktif</span></td>
                         </tr>
+                        
                     </tbody>
                 </table>
             </div>
@@ -155,24 +148,29 @@
     </div>
 
     <!-- Kolom Kanan: Pie Chart + Kalender -->
-    <div class="col-lg-5">
+<div class="col-lg-6">
+    <div class="row">
         <!-- Pie Chart -->
-        <div class="card">
-            <div class="card-header">
-                <h4>Pie Chart Absensi</h4>
-            </div>
-            <div class="card-body">
-                <div id="chart-visitors-profile"></div>
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Pie Chart Absensi</h4>
+                </div>
+                <div class="card-body">
+                    <div id="chart-visitors-profile"></div>
+                </div>
             </div>
         </div>
 
         <!-- Kalender -->
-        <div class="card">
-            <div class="card-header">
-                <h4>Kalender</h4>
-            </div>
-            <div class="card-body">
-                <div id="calendar"></div>
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Kalender</h4>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
             </div>
         </div>
     </div>

@@ -6,11 +6,20 @@ use App\Controllers\BaseController;
 class Dosen extends BaseController
 {
     public function index()
-    {
-        return view('dosen/dashboard', [
-            'title' => 'Dashboard Dosen',
-            'sidebar' => 'layout/dosen_sidebar',
-        ]);
+    { 
+        // Contoh data event untuk kalender
+        $events = [
+            ['title' => 'Pertemuan 1', 'start' => '2025-05-27'],
+            ['title' => 'Ujian Tengah Semester', 'start' => '2025-06-01'],
+        ];
+
+        $data = [
+            'title' => 'dosen/dashboard',
+            'sidebar' => 'layout/dosen_sidebar', 
+            'events' => $events
+        ];
+
+        return view('dosen/dashboard', $data);
     }
 
     public function kelasBaru()

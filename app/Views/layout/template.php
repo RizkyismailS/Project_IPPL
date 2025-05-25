@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/assets/css/app.css">
   <link rel="stylesheet" href="/assets/vendors/bootstrap-icons/bootstrap-icons.css">
   <link rel="stylesheet" href="/assets/vendors/apexcharts/apexcharts.css">
+  <link rel="stylesheet" href="/assets/vendors/fontawesome/all.min.css">
 </head>
 <body>
   <div id="app">
@@ -28,10 +29,25 @@
   <script src="/assets/vendors/dayjs/dayjs.min.js"></script>
   <script src="/assets/vendors/apexcharts/apexcharts.js"></script>
   <script src="/assets/js/pages/ui-apexchart.js"></script>
+  <script src="/assets/vendors/fontawesome/all.min.js"></script>
 
   <script src="assets/js/main.js"></script>
   <script src="/assets/js/bootstrap.bundle.min.js"></script>
   <script src="/assets/js/pages/dashboard.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var calendarEl = document.getElementById('calendar');
+
+    if (calendarEl) {
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: <?= isset($events) ? json_encode($events) : '[]'; ?>
+      });
+      calendar.render();
+    }
+  });
+</script>
   <?= $this->renderSection('scripts') ?>
 
 </body>

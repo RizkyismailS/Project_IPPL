@@ -4,12 +4,12 @@ var lineOptions = {
   },
   series: [
     {
-      name: "sales",
+      name: "MHS",
       data: [30, 40, 35, 50, 49, 60, 70, 91, 125],
     },
   ],
   xaxis: {
-    categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999],
+    categories: ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september'],
   },
 };
 var candleOptions = {
@@ -308,15 +308,12 @@ yaxis: {
 var barOptions = {
   series: [
     {
-      name: "Net Profit",
       data: [44, 55, 57, 56, 61, 58, 63, 60, 66],
     },
     {
-      name: "Revenue",
       data: [76, 85, 101, 98, 87, 105, 91, 114, 94],
     },
     {
-      name: "Free Cash Flow",
       data: [35, 41, 36, 26, 45, 48, 52, 53, 41],
     },
   ],

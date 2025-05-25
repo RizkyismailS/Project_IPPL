@@ -1,16 +1,11 @@
 <?= $this->extend('layout/template') ?>
 <?= $this->section('content') ?>
+<?php
+  $breadcrumb = 'kelas Baru';
+  $pageTitle = 'Buat kelas Baru';
+  echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
+?>
 
-
-<nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="#">pages</a></li>
-            <li class="breadcrumb-item"><a href="#">KelasBaru</a></li>
-        </ol>
-    </nav>
-<div class="page-heading">
-    <h3>Buat Kelas Baru</h3>
-</div>
 
 <div class="page-content">
     <section class="row">

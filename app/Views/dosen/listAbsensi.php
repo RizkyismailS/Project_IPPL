@@ -1,9 +1,11 @@
 <?= $this->extend('layout/template') ?>
 <?= $this->section('content') ?>
+<?php
+  $breadcrumb = 'Absensi';
+  $pageTitle = 'List Absensi';
+  echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
+?>
 
-<div class="page-heading">
-    <h3>Buat Sesi Absensi</h3>
-</div>
 
 <section class="section">
     <div class="card">
