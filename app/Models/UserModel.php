@@ -38,11 +38,11 @@ class UserModel extends Model
     // Validation Rules
     // Aturan ini akan digunakan sebelum data disimpan.
     // Kamu bisa menambahkan lebih banyak aturan atau menyesuaikannya.
-    protected $validationRules = [
-        'username'     => 'required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username,id_user,{id_user}]',
+   protected $validationRules = [
+        'username'     => 'required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username]',
         'password'     => 'required|min_length[8]',
         'role'         => 'required|in_list[admin,dosen,mahasiswa]',
-        'reference_id' => 'permit_empty|max_length[20]', // Boleh kosong (untuk admin), max_length sesuaikan NIP/NIM
+        'reference_id' => 'permit_empty|max_length[20]',
         'is_active'    => 'permit_empty|in_list[0,1]',
     ];
 

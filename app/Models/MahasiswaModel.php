@@ -32,10 +32,10 @@ class MahasiswaModel extends Model
 
     // Validation Rules
     protected $validationRules = [
-        'nim'        => 'required|alpha_numeric|max_length[20]|is_unique[mahasiswa.nim,nim,{nim}]',
+         'nim'        => 'required|alpha_numeric|max_length[20]|is_unique[mahasiswa.nim]',
         'nama'       => 'required|string|max_length[100]',
-        'email'      => 'required|valid_email|max_length[100]|is_unique[mahasiswa.email,nim,{nim}]',
-        'foto_wajah' => 'permit_empty|string|max_length[255]', // Asumsi path ke file, sesuaikan max_length
+        'email'      => 'required|valid_email|max_length[100]|is_unique[mahasiswa.email]',
+        'foto_wajah' => 'permit_empty|string|max_length[255]', // Asumsi path, sesuaikan
     ];
 
     // Pesan kustom untuk error validasi (opsional)
