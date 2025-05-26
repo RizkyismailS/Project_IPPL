@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\DosenModel;
 use App\Models\UserModel;
+use CodeIgniter\Database\Exceptions\DatabaseException; // Tambahkan ini
 
 class AdminController extends BaseController
 {
@@ -18,130 +19,163 @@ class AdminController extends BaseController
         $this->session = \Config\Services::session();
         helper(['form', 'url']);
 
-        // Filter untuk memastikan hanya admin yang bisa akses
-        // Ini sebaiknya dihandle di Routes atau menggunakan Filter CI4
-        // Contoh sederhana pengecekan di constructor:
-        // if ($this->session->get('role') !== 'admin') {
-        //     // Redirect atau tampilkan error
-        //     // Note: ini tidak ideal di constructor, lebih baik via Filter
-        //     echo 'Akses ditolak!';
-        //     exit;
+        // PENTING: Implementasikan Filter untuk otorisasi admin!
+        // Contoh: cek di BaseController atau gunakan fitur Filter CI4
+        // if ($this->session->get('role') !== 'admin' &&ENVIRONMENT !== 'testing') {
+        //     // Jika bukan admin dan bukan dalam mode testing, maka tolak akses
+        //     // Ini hanya contoh sederhana, Filter CI4 lebih baik
+        //     // throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); 
         // }
     }
 
     public function dashboard()
     {
-        // Logika untuk menampilkan dashboard admin
-        // Cek sesi admin di sini atau gunakan Filter
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
-            return redirect()->to(base_url('login'));
+            // Untuk Postman, bisa kembalikan 403 jika tidak pakai redirect
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak. Hanya admin.']);
         }
         $data['title'] = 'Admin Dashboard';
-        $data['nama_user'] = $this->session->get('nama_lengkap'); // Ambil dari sesi jika ada
-        // return view('admin/dashboard', $data); // Asumsi ada view admin/dashboard.php
-        // Karena belum ada view, kita bisa return JSON untuk tes
+        $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
         return $this->response->setJSON($data);
     }
 
-    public function createUserDosen()
+    public function createUserDosenForm() // Mengganti nama agar lebih jelas ini form
     {
-        // Metode untuk menampilkan form pembuatan akun dosen oleh admin
-        // Cek sesi admin
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
-            return redirect()->to(base_url('login'));
+             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
         }
-        // return view('admin/create_dosen'); // View form
-        // Untuk tes backend:
-        return $this->response->setJSON(['message' => 'Halaman form buat akun dosen (belum ada frontend)']);
+        // Ini hanya untuk endpoint GET jika ada form HTML. Untuk Postman, storeUserDosen lebih relevan.
+        return $this->response->setJSON(['status' => 'info', 'message' => 'Endpoint untuk menampilkan form pembuatan akun dosen (via GET).']);
     }
 
     public function storeUserDosen()
     {
-        // Cek sesi admin
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Akses ditolak']);
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak. Hanya admin.']);
         }
 
-        // Validasi untuk input data dosen dan user
-        // Aturan validasi sudah ada di masing-masing model
-        // DosenModel: nip, nama, email, jabatan
-        // UserModel: username, password, role, reference_id
-
-        $validation = \Config\Services::validation();
-        // Sesuaikan rules dengan field form yang akan dibuat
-        $validation->setRules([
-            'nip'            => 'required|alpha_numeric|max_length[20]|is_unique[dosen.nip]',
-            'nama_dosen'     => 'required|string|max_length[100]',
-            'email_dosen'    => 'required|valid_email|max_length[100]|is_unique[dosen.email]|is_unique[users.username,username,{username}]', // Jika username dosen = email
-            'jabatan_dosen'  => 'permit_empty|string|max_length[50]',
-            'username_dosen' => 'required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username]',
-            'password_dosen' => 'required|min_length[8]',
-        ],
-        [ // Custom messages
-            'nip' => [
-                'is_unique' => 'NIP ini sudah terdaftar.'
+        // Aturan validasi di Controller
+        $validationRules = [
+            'nip'            => [
+                'label' => 'NIP',
+                'rules' => 'required|alpha_numeric|max_length[20]|is_unique[dosen.nip]', // Model Dosen akan validasi is_unique juga
+                'errors' => [
+                    'is_unique' => '{field} ini sudah terdaftar.'
+                ]
             ],
-            'email_dosen' => [
-                'is_unique' => 'Email ini sudah terdaftar.'
+            'nama_dosen'     => ['label' => 'Nama Dosen', 'rules' => 'required|string|max_length[100]'],
+            'email_dosen'    => [
+                'label' => 'Email Dosen',
+                'rules' => 'required|valid_email|max_length[100]|is_unique[dosen.email]|is_unique[users.username]', // Cek unik di dosen.email dan users.username
+                'errors' => [
+                    'is_unique' => '{field} ini sudah digunakan oleh dosen lain atau sebagai username pengguna.'
+                ]
             ],
-             'username_dosen' => [
-                'is_unique' => 'Username ini sudah digunakan.'
-            ]
-        ]);
-
-        if (!$validation->withRequest($this->request)->run()) {
-            // return redirect()->back()->withInput()->with('errors', $validation->getErrors());
-            // Untuk tes backend:
-            return $this->response->setStatusCode(400)->setJSON(['errors' => $validation->getErrors()]);
+            'jabatan_dosen'  => ['label' => 'Jabatan Dosen', 'rules' => 'permit_empty|string|max_length[50]'],
+            'username_dosen' => [
+                'label' => 'Username Dosen',
+                'rules' => 'required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username]',
+                'errors' => [
+                    'is_unique' => '{field} ini sudah digunakan.'
+                ]
+            ],
+            'password_dosen' => ['label' => 'Password Dosen', 'rules' => 'required|min_length[8]'],
+        ];
+        
+        if (!$this->validate($validationRules)) {
+            log_message('error', 'Validasi pembuatan akun dosen gagal: ' . json_encode($this->validator->getErrors()));
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'validation_error',
+                'errors' => $this->validator->getErrors()
+            ]);
         }
         
         $dosenData = [
-            'nip'     => $this->request->getPost('nip'),
-            'nama'    => $this->request->getPost('nama_dosen'),
-            'email'   => $this->request->getPost('email_dosen'),
-            'jabatan' => $this->request->getPost('jabatan_dosen'),
+            'nip'     => $this->request->getVar('nip'),
+            'nama'    => $this->request->getVar('nama_dosen'),
+            'email'   => $this->request->getVar('email_dosen'),
+            'jabatan' => $this->request->getVar('jabatan_dosen'),
         ];
 
+        // UserModel akan hash password via callback $beforeInsert
         $userData = [
-            'username'     => $this->request->getPost('username_dosen'),
-            'password'     => $this->request->getPost('password_dosen'), // Akan di-hash oleh UserModel
+            'username'     => $this->request->getVar('username_dosen'),
+            'password'     => $this->request->getVar('password_dosen'),
             'role'         => 'dosen',
-            'reference_id' => $this->request->getPost('nip'),
-            'is_active'    => 1, // Dosen yang dibuat admin langsung aktif
+            'reference_id' => $this->request->getVar('nip'), // Hubungkan ke NIP dosen
+            'is_active'    => 1, // Akun dosen yang dibuat admin langsung aktif
         ];
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transBegin();
 
-        $dosenSaved = $this->dosenModel->insert($dosenData);
-        $userSaved = $this->userModel->insert($userData);
+        try {
+            if (!$this->dosenModel->insert($dosenData)) {
+                $db->transRollback();
+                log_message('error', 'Gagal insert ke dosenModel. Errors: ' . json_encode($this->dosenModel->errors()));
+                return $this->response->setStatusCode(400)->setJSON([ // Bisa 400 jika karena validasi model
+                    'status' => 'error',
+                    'message' => 'Penyimpanan data profil dosen gagal.',
+                    'errors' => $this->dosenModel->errors()
+                ]);
+            }
+            // $dosenInsertID = $this->dosenModel->getInsertID(); // nip adalah PK, bukan auto-increment
 
-        $db->transComplete();
+            if (!$this->userModel->insert($userData)) {
+                $db->transRollback();
+                log_message('error', 'Gagal insert ke userModel. Errors: ' . json_encode($this->userModel->errors()));
+                return $this->response->setStatusCode(400)->setJSON([ // Bisa 400 jika karena validasi model
+                    'status' => 'error',
+                    'message' => 'Penyimpanan data login dosen gagal.',
+                    'errors' => $this->userModel->errors()
+                ]);
+            }
+            $userInsertID = $this->userModel->getInsertID();
 
-        if ($db->transStatus() === false || $dosenSaved === false || $userSaved === false) {
-            $errors = array_merge($this->dosenModel->errors() ?: [], $this->userModel->errors() ?: []);
-            // return redirect()->back()->withInput()->with('error', 'Gagal membuat akun dosen.')->with('errors', $errors);
-            // Untuk tes backend:
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                log_message('error', 'Status transaksi database gagal setelah mencoba insert dosen.');
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Terjadi kesalahan internal saat menyimpan data dosen.'
+                ]);
+            }
+
+            $db->transCommit();
+            log_message('info', 'Akun dosen berhasil dibuat. NIP: ' . $dosenData['nip'] . ', UserID: ' . $userInsertID);
+            return $this->response->setStatusCode(201)->setJSON([
+                'status' => 'success',
+                'message' => 'Akun dosen berhasil dibuat.',
+                'data' => [
+                    'nip' => $dosenData['nip'],
+                    'user_id' => $userInsertID
+                ]
+            ]);
+
+        } catch (DatabaseException $e) {
+            $db->transRollback();
+            log_message('error', 'DatabaseException saat pembuatan akun dosen: ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON([
-                'error' => 'Gagal membuat akun dosen.',
-                'model_errors_dosen' => $this->dosenModel->errors(),
-                'model_errors_user' => $this->userModel->errors()
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan database saat pembuatan akun dosen.',
+                'detail' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Internal Server Error'
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Exception umum saat pembuatan akun dosen: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan tidak terduga saat pembuatan akun dosen.',
+                'detail' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Internal Server Error'
             ]);
         }
-
-        // return redirect()->to(base_url('admin/manage_dosen'))->with('success', 'Akun dosen berhasil dibuat.');
-        // Untuk tes backend:
-        return $this->response->setJSON(['success' => 'Akun dosen berhasil dibuat. NIP: ' . $dosenData['nip'] . ', UserID: ' . $this->userModel->insertID()]);
     }
 
-    // Tambahkan metode lain untuk CRUD Dosen jika diperlukan (list, edit, update, delete)
-    // Contoh list dosen:
     public function listDosen() {
-        // Cek sesi admin
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
-             return $this->response->setStatusCode(403)->setJSON(['error' => 'Akses ditolak']);
+             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
         }
         $data['dosen'] = $this->dosenModel->findAll();
-        return $this->response->setJSON($data);
+        return $this->response->setJSON(['status' => 'success', 'data' => $data['dosen']]);
     }
 }

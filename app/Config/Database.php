@@ -27,12 +27,13 @@ class Database extends Config
     public array $default = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => '',
+        'username'     => 'root',
         'password'     => '',
-        'database'     => '',
+        'database'     => 'absensi_mahasiswa',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,
+        'DBDebug'  => (ENVIRONMENT !== 'production'), // Tampilkan error DB saat development
         'DBDebug'      => true,
         'charset'      => 'utf8mb4',
         'DBCollat'     => 'utf8mb4_general_ci',
@@ -49,6 +50,7 @@ class Database extends Config
             'datetime' => 'Y-m-d H:i:s',
             'time'     => 'H:i:s',
         ],
+        'TrustServerCertificate' => true, // Uncomment jika encrypt true dan menggunakan self-signed certificate
     ];
 
     //    /**
