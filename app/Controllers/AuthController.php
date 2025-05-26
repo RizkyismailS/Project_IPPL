@@ -46,6 +46,22 @@ class AuthController extends BaseController
         $password = $this->request->getPost('password');
 
         $user = $this->userModel->getUserByUsername($username);
+        if ($user) {
+            log_message('critical', 'LOGIN_VERIFY: Username Input: ' . $username . 
+                                    ', Password Input: ' . $password . // Hati-hati log password plaintext, hanya untuk debug singkat
+                                    ', Hashed PW dari DB: ' . $user['password']);
+
+            if (password_verify($password, $user['password'])) {
+                log_message('critical', 'LOGIN_VERIFY: password_verify() SUKSES');
+                // ...
+            } else {
+                log_message('error', 'LOGIN_VERIFY: password_verify() GAGAL');
+                // ...
+            }
+            } else {
+                log_message('error', 'LOGIN_VERIFY: User tidak ditemukan: ' . $username);
+                // ...
+            }
 
         if ($user && password_verify($password, $user['password'])) {
             if (!$user['is_active']) {
@@ -73,13 +89,16 @@ class AuthController extends BaseController
             }
 
             $this->session->set($userData);
+            log_message('info', 'AUTH_LOGIN: Sesi diset untuk username: ' . $userData['username'] . ', role: ' . $userData['role'] . ', isLoggedIn: ' . ($userData['isLoggedIn'] ? 'true' : 'false') . ', All session data: ' . json_encode($this->session->get()));
 
-            // Redirect berdasarkan peran
             if ($user['role'] === 'admin') {
+                log_message('info', 'AUTH_LOGIN: Redirecting admin ke admin/dashboard');
                 return redirect()->to(base_url('admin/dashboard'))->with('success', 'Login berhasil!');
             } elseif ($user['role'] === 'dosen') {
+                log_message('info', 'AUTH_LOGIN: Redirecting dosen ke dosen/dashboard');
                 return redirect()->to(base_url('dosen/dashboard'))->with('success', 'Login berhasil!');
             } elseif ($user['role'] === 'mahasiswa') {
+                log_message('info', 'AUTH_LOGIN: Redirecting mahasiswa ke mahasiswa/dashboard');
                 return redirect()->to(base_url('mahasiswa/dashboard'))->with('success', 'Login berhasil!');
             }
         } else {

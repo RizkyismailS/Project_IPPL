@@ -13,6 +13,12 @@ use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 
+// Import class filter Anda jika belum
+use App\Filters\AdminAuthFilter; // PASTIKAN NAMESPACE DAN NAMA CLASS FILTER BENAR
+use App\Filters\DosenAuthFilter;   // Jika Anda juga membuat ini
+use App\Filters\MahasiswaAuthFilter; // Jika Anda juga membuat ini
+
+
 class Filters extends BaseFilters
 {
     /**
@@ -34,6 +40,11 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
+
+        // TAMBAHKAN ALIAS FILTER ANDA DI SINI:
+        'adminAuthFilter'     => AdminAuthFilter::class, // Atau \App\Filters\AdminAuthFilter::class
+        'dosenAuthFilter'     => DosenAuthFilter::class,   // Tambahkan jika digunakan
+        'mahasiswaAuthFilter' => MahasiswaAuthFilter::class, // Tambahkan jika digunakan
     ];
 
     /**

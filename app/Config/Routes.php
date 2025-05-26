@@ -12,6 +12,9 @@ $routes->get('dosen/listAbsensi', 'Dosen::listAbsensi');
 $routes->get('dosen/kelasBaru', 'Dosen::kelasBaru');
 $routes->get('dosen/absensi', 'Dosen::absensi');
 $routes->get('/mahasiswa/dashboard', 'Mahasiswa\Dashboard::index');
+$routes->get('/hello', function() {
+    return 'Hello from Laragon CI4!';
+});
 
 // Auth Routes
 $routes->get('/login', 'AuthController::login');

@@ -21,7 +21,7 @@
             <div class="login-role">Log in as Teacher</div>
         </div>
 
-    <?= $this->include('layout/auth/header'); ?>
+    <?= view('layout/header') ?>
         <!-- Content -->
         <div class="login-content">
             <div class="login-box">

@@ -26,6 +26,7 @@ class MahasiswaController extends BaseController
 
     public function dashboard()
     {
+        log_message('critical', 'MAHASISWA_CONTROLLER: Masuk MahasiswaController::dashboard. Sesi: ' . json_encode($this->session->get()));
         // Cek sesi mahasiswa
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'mahasiswa') {
             return redirect()->to(base_url('login'));
@@ -38,7 +39,7 @@ class MahasiswaController extends BaseController
         $data['nama_user'] = $this->session->get('nama_lengkap');
 
 
-        // return view('mahasiswa/dashboard', $data);
+        return view('mahasiswa/dashboard', $data);
         // Untuk tes backend:
         return $this->response->setJSON($data);
     }

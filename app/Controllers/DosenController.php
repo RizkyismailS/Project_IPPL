@@ -26,6 +26,7 @@ class DosenController extends BaseController
 
     public function dashboard()
     {
+        log_message('critical', 'DOSEN_CONTROLLER: Masuk DosenController::dashboard. Sesi: ' . json_encode($this->session->get()));
         // Cek sesi dosen
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'dosen') {
             return redirect()->to(base_url('login'));
