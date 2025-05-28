@@ -13,3 +13,7 @@ input.form-control {
 .btn-outline-primary {
     border-radius: 10px;
 }
+.modal-header-green {
+  background-color: #00b894; /* Warna hijau custom */
+  color: white;
+}

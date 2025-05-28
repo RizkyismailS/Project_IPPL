@@ -5,7 +5,7 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Dosen::index');
+$routes->get('/', 'mahasiswa::enroll');
 $routes->get('dosen/dashboard', 'Dosen::index');
 $routes->get('dosen/listkelas', 'Dosen::listkelas');
 $routes->get('dosen/listAbsensi', 'Dosen::listAbsensi');

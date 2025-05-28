@@ -35,5 +35,34 @@
         </div>
     </div>
 </div>
+        <!-- modal pop up kelas dan dosen -->
+<div class="modal fade" id="modalEnrolKelas" tabindex="-1" aria-labelledby="modalEnrolKelasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content rounded-4 overflow-hidden">
+
+      <!-- Header Hijau -->
+      <div class="modal-header-green px-4 py-3">
+        <h5 class="mb-0">Manajemen Sistem Informasi</h5>
+        <small>A1 - IF</small>
+      </div>
+
+      <!-- Body Modal -->
+      <div class="modal-body px-5 py-4 d-flex flex-column align-items-center justify-content-center">
+        <div class="d-flex align-items-center w-100 mb-4" style="gap: 20px;">
+          <!-- Foto dosen di kiri mentok -->
+          <img src="/assets/images/faces/1.jpg" alt="Dosen" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-left: 0;">
+
+          <!-- Nama & tombol tetap proporsional -->
+          <div class="text-center flex-fill">
+            <h5 class="mb-3" style="font-size: 1.2rem;">prof. Dr. Paul Morrison S.Pd. M.Pd</h5>
+            <button class="btn btn-primary px-5 py-2" style="font-size: 1.1rem;">Enrol Kelas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 <?= $this->endSection() ?>

@@ -26,7 +26,21 @@
                 <?= $this->renderSection('content') ?>
             </div>
         </div>
-
     </div>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+function cekKodeKelas() {
+    const kode = document.getElementById('kodeKelas').value.trim();
+
+    // Contoh validasi sederhana (panjang kode antara 5–8)
+    if (kode.length >= 5 && kode.length <= 8) {
+        const modal = new bootstrap.Modal(document.getElementById('modalEnrolKelas'));
+        modal.show();
+    } else {
+        alert('Kode kelas tidak valid. Masukkan 5–8 huruf atau angka.');
+    }
+}
+</script>
+
 </body>
 </html>
