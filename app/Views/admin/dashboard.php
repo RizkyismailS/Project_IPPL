@@ -8,28 +8,24 @@
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
-                <div><i class="bi bi-person-video2"></i></div>
                 <div>Total Dosen</div>
                 <h4>40</h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
-                <div><i class="bi bi-mortarboard"></i></div>
                 <div>Total Mahasiswa</div>
                 <h4>1.204</h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
-                <div><i class="bi bi-clock"></i></div>
                 <div>Kelas Aktif</div>
                 <h4>12</h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
-                <div><i class="bi bi-phone"></i></div>
                 <div>Sesi Aktif</div>
                 <h4>8</h4>
             </div>

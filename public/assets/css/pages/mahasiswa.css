@@ -1,0 +1,15 @@
+.bg-navy {
+    background-color: #001f3f; /* Warna biru dongker */
+}
+.card {
+    border-radius: 15px !important;
+}
+
+input.form-control {
+    border-radius: 10px;
+    height: 90px;
+}
+
+.btn-outline-primary {
+    border-radius: 10px;
+}

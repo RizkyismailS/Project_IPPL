@@ -9,18 +9,13 @@
     <link rel="stylesheet" href="/assets/vendors/bootstrap-icons/bootstrap-icons.css">
     <link rel="stylesheet" href="/assets/css/app.css">
     <link rel="stylesheet" href="/assets/css/pages/dashboard.css">
-    
+    <link rel="stylesheet" href="/assets/css/pages/mahasiswa.css">
 </head>
 
+<?=$this->include($navbar)?>
 <body>
     
     <div class="layout-wrapper">
-
-        <!-- Header -->
-        <div class="header">
-            <div><strong>LOGO</strong></div>
-            <div><a href="#" style="color: white;">Logout</a></div>
-        </div>
 
         <!-- Main Body -->
         <div class="main-wrapper">
