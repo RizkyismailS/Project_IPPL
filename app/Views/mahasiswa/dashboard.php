@@ -1,5 +1,5 @@
-<?= $this->extend('layout/main_template') ?>
-<?= $this->section('content') ?>
+<?= $this->extend('layout/main_template'); ?>
+<?= $this->section('content'); ?>
 
 <div class="container-fluid">
   <div class="card shadow-sm border-0">

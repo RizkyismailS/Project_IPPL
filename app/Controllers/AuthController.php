@@ -93,6 +93,7 @@ class AuthController extends BaseController
 
             if ($user['role'] === 'admin') {
                 log_message('info', 'AUTH_LOGIN: Redirecting admin ke admin/dashboard');
+                return view('dosen/dashboard'); // <---- belum ditentukan, ganti dengan view admin/dashboard jika ada
                 return redirect()->to(base_url('admin/dashboard'))->with('success', 'Login berhasil!');
             } elseif ($user['role'] === 'dosen') {
                 log_message('info', 'AUTH_LOGIN: Redirecting dosen ke dosen/dashboard');
@@ -265,6 +266,6 @@ class AuthController extends BaseController
     public function logout()
     {
         $this->session->destroy();
-        return redirect()->to(base_url('login'))->with('success', 'Anda telah berhasil logout.');
+        return redirect()->to(base_url('login/auth'))->with('success', 'Anda telah berhasil logout.');
     }
 }

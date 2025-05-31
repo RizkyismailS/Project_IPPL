@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/assets/css/pages/mahasiswa.css">
 </head>
 
-<?=$this->include($navbar)?>
+<?= view("layout/navbar");?>
 <body>
     
     <div class="layout-wrapper">
@@ -20,10 +20,10 @@
         <!-- Main Body -->
         <div class="main-wrapper">
             <div class="sidebar">
-                <?= $this->include($sidebar) ?>
+                <?= view('layout/student_sidebar'); ?>
             </div>
             <div class="content">
-                <?= $this->renderSection('content') ?>
+                <?= $this->renderSection('content'); ?>
             </div>
         </div>
     </div>
