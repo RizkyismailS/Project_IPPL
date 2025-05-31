@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="app">
-    <?= $this->include($sidebar) ?>
+    <?= view('layout/admin_sidebar'); ?>
     <div id="main">
       <?= $this->renderSection('content') ?>
     </div>
@@ -48,6 +48,7 @@
     }
   });
 </script>
+
   <?= $this->renderSection('scripts') ?>
 
 </body>

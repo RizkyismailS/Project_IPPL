@@ -36,6 +36,9 @@ class AdminController extends BaseController
         }
         $data['title'] = 'Admin Dashboard';
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
+        
+        return view('admin/dashboard', $data);
+
         return $this->response->setJSON($data);
     }
 

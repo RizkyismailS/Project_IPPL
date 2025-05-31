@@ -10,37 +10,80 @@
     <link rel="stylesheet" href="/assets/css/app.css">
     <link rel="stylesheet" href="/assets/css/pages/dashboard.css">
     <link rel="stylesheet" href="/assets/css/pages/mahasiswa.css">
+    <!-- Tambahkan perfect-scrollbar jika menggunakan template Mazer -->
+    <link rel="stylesheet" href="/assets/vendors/perfect-scrollbar/perfect-scrollbar.css">
 </head>
 
-<?= view("layout/navbar");?>
+<?php 
+$session = session();
+$role = $session->get('role') ?? 'guest';
+
+// Menentukan sidebar berdasarkan role dengan mapping
+$sidebarMap = [
+    'admin' => 'admin_sidebar',
+    'dosen' => 'dosen_sidebar',
+    'mahasiswa' => 'student_sidebar',
+    'guest' => 'guest_sidebar' // Fallback sidebar untuk tamu
+];
+
+// Ambil sidebar yang sesuai atau gunakan fallback
+$currentSidebar = $sidebarMap[$role] ?? $sidebarMap['guest'];
+?>
+
 <body>
+    <!-- Sidebar ditampilkan sesuai role -->
+    <?= view("layout/{$currentSidebar}"); ?>
     
-    <div class="layout-wrapper">
+    <div id="main">
+        <header class="mb-3">
+            <a href="#" class="burger-btn d-block d-xl-none">
+                <i class="bi bi-justify fs-3"></i>
+            </a>
+        </header>
 
-        <!-- Main Body -->
-        <div class="main-wrapper">
-            <div class="sidebar">
-                <?= view('layout/student_sidebar'); ?>
-            </div>
-            <div class="content">
-                <?= $this->renderSection('content'); ?>
-            </div>
+        <div class="page-heading">
+            <h3><?= $title ?? 'Dashboard' ?></h3>
         </div>
+        
+        <div class="page-content">
+            <?= $this->renderSection('content'); ?>
+        </div>
+
+        <footer>
+            <div class="footer clearfix mb-0 text-muted">
+                <div class="float-start">
+                    <p><?= date('Y') ?> &copy; IPPL Project</p>
+                </div>
+                <div class="float-end">
+                    <p>Crafted by <span class="text-danger">Your Team Name</span></p>
+                </div>
+            </div>
+        </footer>
     </div>
+
+    <script src="/assets/vendors/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/main.js"></script>
+    
+    <?php if (isset($scripts)): ?>
+        <?php foreach ($scripts as $script): ?>
+            <script src="<?= $script ?>"></script>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    
     <script>
-function cekKodeKelas() {
-    const kode = document.getElementById('kodeKelas').value.trim();
-
-    // Contoh validasi sederhana (panjang kode antara 5–8)
-    if (kode.length >= 5 && kode.length <= 8) {
-        const modal = new bootstrap.Modal(document.getElementById('modalEnrolKelas'));
-        modal.show();
-    } else {
-        alert('Kode kelas tidak valid. Masukkan 5–8 huruf atau angka.');
+    function cekKodeKelas() {
+        const kode = document.getElementById('kodeKelas').value.trim();
+    
+        if (kode.length >= 5 && kode.length <= 8) {
+            const modal = new bootstrap.Modal(document.getElementById('modalEnrolKelas'));
+            modal.show();
+        } else {
+            alert('Kode kelas tidak valid. Masukkan 5–8 huruf atau angka.');
+        }
     }
-}
-</script>
+    </script>
 
+    <?= $this->renderSection('scripts') ?>
 </body>
 </html>
