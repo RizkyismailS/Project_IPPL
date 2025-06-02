@@ -29,7 +29,7 @@
                 </li>
 
                 <li class="sidebar-item">
-                    <a href="/admin/manageDosen" class="sidebar-link">
+                    <a href="/admin/dosen/list" class="sidebar-link">
                         <i class="bi bi-person-fill"></i>
                         <span>Manage Dosen</span>
                     </a>

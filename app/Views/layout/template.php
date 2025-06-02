@@ -16,9 +16,25 @@
   <link rel="stylesheet" href="/assets/vendors/apexcharts/apexcharts.css">
   <link rel="stylesheet" href="/assets/vendors/fontawesome/all.min.css">
 </head>
+
+<?php 
+$session = session();
+$role = $session->get('role') ?? 'guest';
+
+// Menentukan sidebar berdasarkan role dengan mapping
+$sidebarMap = [
+    'admin' => 'admin_sidebar',
+    'dosen' => 'dosen_sidebar',
+    'mahasiswa' => 'student_sidebar',
+    'guest' => 'guest_sidebar' // Fallback sidebar untuk tamu
+];
+
+// Ambil sidebar yang sesuai atau gunakan fallback
+$currentSidebar = $sidebarMap[$role] ?? $sidebarMap['guest'];
+?>
 <body>
   <div id="app">
-    <?= view('layout/admin_sidebar'); ?>
+    <?= view("layout/{$currentSidebar}"); ?>
     <div id="main">
       <?= $this->renderSection('content') ?>
     </div>

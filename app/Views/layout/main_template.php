@@ -14,25 +14,11 @@
     <link rel="stylesheet" href="/assets/vendors/perfect-scrollbar/perfect-scrollbar.css">
 </head>
 
-<?php 
-$session = session();
-$role = $session->get('role') ?? 'guest';
 
-// Menentukan sidebar berdasarkan role dengan mapping
-$sidebarMap = [
-    'admin' => 'admin_sidebar',
-    'dosen' => 'dosen_sidebar',
-    'mahasiswa' => 'student_sidebar',
-    'guest' => 'guest_sidebar' // Fallback sidebar untuk tamu
-];
-
-// Ambil sidebar yang sesuai atau gunakan fallback
-$currentSidebar = $sidebarMap[$role] ?? $sidebarMap['guest'];
-?>
 
 <body>
     <!-- Sidebar ditampilkan sesuai role -->
-    <?= view("layout/{$currentSidebar}"); ?>
+    
     
     <div id="main">
         <header class="mb-3">
