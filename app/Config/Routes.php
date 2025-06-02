@@ -28,6 +28,8 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->get('dosen/create', 'AdminController::createUserDosenForm'); // Form
     $routes->post('dosen/store', 'AdminController::storeUserDosen'); // Proses simpan
     $routes->get('dosen/list', 'AdminController::listDosen');
+    $routes->get('dosen/edit/(:segment)', 'AdminController::editDosenForm/$1');   
+    $routes->put('dosen/update/(:segment)', 'AdminController::updateDosen/$1');
 });
 
 // Dosen Routes (Gunakan grup dengan filter)

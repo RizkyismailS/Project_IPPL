@@ -198,6 +198,182 @@ class AdminController extends BaseController
         }
     }
 
+    /**
+     * Menampilkan form untuk mengedit data dosen.
+     * @param string $nip NIP dosen yang akan diedit
+     */
+    public function editDosenForm(string $nip)
+    {
+        $dosenProfil = $this->dosenModel->find($nip);
+        $userAkun = $this->userModel->where('reference_id', $nip)
+                                    ->where('role', 'dosen')
+                                    ->first();
+
+        if (!$dosenProfil) {
+            // Jika dari browser
+            if (!$this->requestIsJson()) { // Helper method untuk cek $wantsJson
+                return redirect()->to(base_url('admin/dosen/list'))
+                                ->with('error', 'Data dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
+            }
+            // Jika API
+            return $this->response->setStatusCode(404)->setJSON([
+                'status' => 'error',
+                'message' => 'Data dosen tidak ditemukan.'
+            ]);
+        }
+
+        $data['title'] = "Edit Data Dosen";
+        $data['dosen_profil'] = $dosenProfil;
+        $data['user_akun'] = $userAkun; // Bisa null jika tidak ada akun user terkait (seharusnya tidak terjadi jika dibuat via storeUserDosen)
+        $data['errors'] = session()->getFlashdata('errors'); // Untuk validasi controller jika redirect
+        $data['errors_dosen_update'] = session()->getFlashdata('errors_dosen_update');
+        $data['errors_user_update'] = session()->getFlashdata('errors_user_update');
+
+        return view('admin/edit', $data);
+    }
+
+    /**
+     * Memproses update data dosen dan akun loginnya.
+     * @param string $nip NIP dosen yang akan diupdate
+     */
+    public function updateDosen(string $nip)
+    {
+
+        // 1. Cek apakah dosen dengan NIP tersebut ada
+        $dosenExists = $this->dosenModel->find($nip);
+        if (!$dosenExists) {
+            return redirect()->to(base_url('admin/dosen/list'))->with('error', 'Data dosen tidak ditemukan.');
+        }
+
+        // Dapatkan user ID terkait jika ada
+        $userAccount = $this->userModel->where('reference_id', $nip)->where('role', 'dosen')->first();
+        $userIdToIgnore = $userAccount ? $userAccount['id_user'] : null;
+    log_message('critical', "[DEBUG_UPDATE_DOSEN] NIP dari URL: " . $nip);
+    log_message('critical', "[DEBUG_UPDATE_DOSEN] User Account ditemukan: " . ($userAccount ? json_encode($userAccount) : 'Tidak ada'));
+    log_message('critical', "[DEBUG_UPDATE_DOSEN] User ID untuk diabaikan (userIdToIgnore): " . $userIdToIgnore);
+    log_message('critical', "[DEBUG_UPDATE_DOSEN] Data request (email_dosen): " . $this->request->getVar('email_dosen'));
+    log_message('critical', "[DEBUG_UPDATE_DOSEN] Data request (username_dosen): " . $this->request->getVar('username_dosen'));
+
+        // 2. Aturan Validasi untuk Update
+        // is_unique perlu mengabaikan record saat ini
+        $validationRules = [
+            // NIP tidak diupdate, jadi tidak perlu validasi NIP di sini kecuali Anda mengizinkannya (tidak umum untuk PK)
+            'nama_dosen'     => ['label' => 'Nama Dosen', 'rules' => 'required|string|max_length[100]'],
+            'email_dosen'    => [
+                'label' => 'Email Dosen',
+                // Abaikan email saat ini untuk dosen ini, tapi cek unik terhadap yang lain
+                // Abaikan juga jika email ini dipakai sebagai username oleh user ini, tapi cek unik terhadap username lain
+                'rules' => "required|valid_email|max_length[100]|is_unique[dosen.email,nip,{$nip}]|is_unique[users.username,id_user,{$userIdToIgnore}]",
+                'errors' => ['is_unique' => '{field} ini sudah digunakan oleh dosen lain atau sebagai username pengguna lain.']
+            ],
+            'jabatan_dosen'  => ['label' => 'Jabatan Dosen', 'rules' => 'permit_empty|string|max_length[50]'],
+            'username_dosen' => [
+                'label' => 'Username Dosen',
+                // Abaikan username saat ini untuk user ini, tapi cek unik terhadap yang lain
+                'rules' => "required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username,id_user,{$userIdToIgnore}]",
+                'errors' => ['is_unique' => '{field} ini sudah digunakan oleh pengguna lain.']
+            ],
+            'password_dosen' => ['label' => 'Password Dosen Baru', 'rules' => 'permit_empty|min_length[8]'], // Boleh kosong
+            'password_confirm_dosen' => [
+                'label'  => 'Konfirmasi Password Dosen Baru',
+                // Hanya required jika password_dosen diisi
+                'rules'  => 'matches[password_dosen]',
+                'errors' => ['matches' => '{field} tidak cocok dengan Password Dosen Baru.']
+            ],
+            'is_active'      => ['label' => 'Status Akun', 'rules' => 'required|in_list[0,1]']
+        ];
+
+        // Jika password diisi, maka konfirmasi password juga wajib
+        if (!empty($this->request->getVar('password_dosen'))) {
+            $validationRules['password_confirm_dosen']['rules'] = 'required|matches[password_dosen]';
+        }
+
+
+        if (!$this->validate($validationRules)) {
+            log_message('error', '[AdminController] Validasi update akun dosen gagal (controller): ' . json_encode($this->validator->getErrors()));
+            return redirect()->to(base_url('admin/dosen/edit/' . $nip))
+                            ->withInput()
+                            ->with('errors', $this->validator->getErrors());
+        }
+
+        // 3. Siapkan Data
+        $dosenData = [
+            'nama'    => $this->request->getVar('nama_dosen'),
+            'email'   => $this->request->getVar('email_dosen'),
+            'jabatan' => $this->request->getVar('jabatan_dosen'),
+        ];
+
+        $userData = [
+            'username'     => $this->request->getVar('username_dosen'),
+            'is_active'    => $this->request->getVar('is_active'),
+        ];
+        // Hanya update password jika diisi
+        if (!empty($this->request->getVar('password_dosen'))) {
+            $userData['password'] = $this->request->getVar('password_dosen'); // Akan di-hash oleh UserModel
+        }
+
+        // 4. Transaksi Database
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        $dosenUpdated = false;
+        $userUpdated = false;
+
+        try {
+            $dosenUpdated = $this->dosenModel->update($nip, $dosenData);
+            if ($dosenUpdated === false && !empty($this->dosenModel->errors())) {
+                // Validasi model DosenModel gagal
+                log_message('error', '[AdminController] Gagal update dosenModel. NIP: '.$nip.'. Errors: ' . json_encode($this->dosenModel->errors()));
+                // Tidak perlu rollback di sini, akan dihandle di akhir
+            } else if ($dosenUpdated === false) {
+                // Gagal update karena alasan lain (jarang terjadi jika validasi lolos)
+                log_message('error', '[AdminController] Gagal update dosenModel tanpa error validasi. NIP: '.$nip);
+            }
+
+
+            if ($userAccount) { // Hanya update jika akun user ada
+                $userUpdated = $this->userModel->update($userAccount['id_user'], $userData);
+                if ($userUpdated === false && !empty($this->userModel->errors())) {
+                    log_message('error', '[AdminController] Gagal update userModel. UserID: '.$userAccount['id_user'].'. Errors: ' . json_encode($this->userModel->errors()));
+                } else if ($userUpdated === false) {
+                    log_message('error', '[AdminController] Gagal update userModel tanpa error validasi. UserID: '.$userAccount['id_user']);
+                }
+            } else {
+                // Seharusnya tidak terjadi jika dosen dibuat dengan storeUserDosen
+                // Tapi jika terjadi, kita anggap user update "berhasil" (tidak ada yang diupdate)
+                // atau buat akun user baru jika logikanya begitu (tapi ini lebih cocok di create)
+                log_message('warning', '[AdminController] Tidak ditemukan akun user terkait untuk dosen NIP: ' . $nip . ' saat update.');
+                $userUpdated = true; // Anggap berhasil karena tidak ada yang perlu diupdate untuk user
+            }
+
+
+            if ($db->transStatus() === false || $dosenUpdated === false || ($userAccount && $userUpdated === false) ) {
+                $db->transRollback();
+                log_message('error', '[AdminController] Transaksi UPDATE GAGAL dan di-rollback. NIP: '.$nip.'. Dosen updated: ' . ($dosenUpdated ? 'true':'false') . ', User updated: ' . ($userUpdated ? 'true':'false'));
+                
+                $combinedErrors = array_merge($this->dosenModel->errors() ?: [], $this->userModel->errors() ?: []);
+
+                return redirect()->to(base_url('admin/dosen/edit/' . $nip))
+                                ->withInput()
+                                ->with('error', 'Gagal mengupdate data dosen. Periksa kembali data Anda.')
+                                ->with('errors_dosen_update', $this->dosenModel->errors())
+                                ->with('errors_user_update', $this->userModel->errors());
+            } else {
+                $db->transCommit();
+                log_message('info', '[AdminController] Data dosen berhasil diupdate. NIP: ' . $nip);
+                return redirect()->to(base_url('admin/dosen/list'))
+                                ->with('success', 'Data dosen ' . esc($dosenData['nama']) . ' berhasil diupdate.');
+            }
+
+        } catch (DatabaseException $e) {
+            $db->transRollback();
+            log_message('error', '[AdminController] DatabaseException saat update akun dosen: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[AdminController] Exception umum saat update akun dosen: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+        }
+    }
+
     public function listDosen() {
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
              return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);

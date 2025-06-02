@@ -34,9 +34,9 @@ class DosenModel extends Model
     // Validation Rules
     // Sesuaikan aturan validasi ini dengan kebutuhanmu
     protected $validationRules = [
-        'nip'     => 'required|alpha_numeric|max_length[20]|is_unique[dosen.nip]',
+        'nip'     => 'required|alpha_numeric|max_length[20]',
         'nama'    => 'required|string|max_length[100]',
-        'email'   => 'required|valid_email|max_length[100]|is_unique[dosen.email]',
+        'email'   => 'required|valid_email|max_length[100]',
         'jabatan' => 'permit_empty|string|max_length[50]',
     ];
 
