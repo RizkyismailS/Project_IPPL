@@ -34,6 +34,7 @@ class AdminController extends BaseController
             // Untuk Postman, bisa kembalikan 403 jika tidak pakai redirect
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak. Hanya admin.']);
         }
+        
         $data['title'] = 'Admin Dashboard';
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
         
@@ -42,17 +43,26 @@ class AdminController extends BaseController
         return $this->response->setJSON($data);
     }
 
-    public function createUserDosenForm() // Mengganti nama agar lebih jelas ini form
+    public function createUserDosenForm()
     {
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
              return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
         }
-        // Ini hanya untuk endpoint GET jika ada form HTML. Untuk Postman, storeUserDosen lebih relevan.
+        $data['title'] = "Tambah Dosen Baru";
+        $data['errors'] = session()->getFlashdata('errors');
+        $data['errors_dosen'] = session()->getFlashdata('errors_dosen');
+        $data['errors_user'] = session()->getFlashdata('errors_user');
+
+        return view('admin/create', $data);
         return $this->response->setJSON(['status' => 'info', 'message' => 'Endpoint untuk menampilkan form pembuatan akun dosen (via GET).']);
     }
 
     public function storeUserDosen()
     {
+        $wantsJson = $this->request->isAJAX() || 
+             strpos($this->request->getHeaderLine('Accept'), 'application/json') !== false ||
+             $this->request->getHeaderLine('Content-Type') === 'application/json';
+
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak. Hanya admin.']);
         }
@@ -86,11 +96,17 @@ class AdminController extends BaseController
         ];
         
         if (!$this->validate($validationRules)) {
-            log_message('error', 'Validasi pembuatan akun dosen gagal: ' . json_encode($this->validator->getErrors()));
-            return $this->response->setStatusCode(400)->setJSON([
-                'status' => 'validation_error',
-                'errors' => $this->validator->getErrors()
-            ]);
+            log_message('error', '[AdminController] Validasi pembuatan akun dosen gagal (controller): ' . json_encode($this->validator->getErrors()));
+            if ($wantsJson) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'validation_error',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
+            // Untuk browser, redirect kembali dengan error dan input lama
+            return redirect()->to(base_url('admin/dosen/create')) // Arahkan kembali ke form create
+                             ->withInput()
+                             ->with('errors', $this->validator->getErrors());
         }
         
         $dosenData = [
@@ -112,48 +128,56 @@ class AdminController extends BaseController
         $db = \Config\Database::connect();
         $db->transBegin();
 
+        $dosenSaved = false;
+        $userSaved = false;
+        $userInsertID = null;
+
         try {
-            if (!$this->dosenModel->insert($dosenData)) {
-                $db->transRollback();
-                log_message('error', 'Gagal insert ke dosenModel. Errors: ' . json_encode($this->dosenModel->errors()));
-                return $this->response->setStatusCode(400)->setJSON([ // Bisa 400 jika karena validasi model
-                    'status' => 'error',
-                    'message' => 'Penyimpanan data profil dosen gagal.',
-                    'errors' => $this->dosenModel->errors()
-                ]);
-            }
-            // $dosenInsertID = $this->dosenModel->getInsertID(); // nip adalah PK, bukan auto-increment
-
-            if (!$this->userModel->insert($userData)) {
-                $db->transRollback();
-                log_message('error', 'Gagal insert ke userModel. Errors: ' . json_encode($this->userModel->errors()));
-                return $this->response->setStatusCode(400)->setJSON([ // Bisa 400 jika karena validasi model
-                    'status' => 'error',
-                    'message' => 'Penyimpanan data login dosen gagal.',
-                    'errors' => $this->userModel->errors()
-                ]);
-            }
-            $userInsertID = $this->userModel->getInsertID();
-
-            if ($db->transStatus() === false) {
-                $db->transRollback();
-                log_message('error', 'Status transaksi database gagal setelah mencoba insert dosen.');
-                return $this->response->setStatusCode(500)->setJSON([
-                    'status' => 'error',
-                    'message' => 'Terjadi kesalahan internal saat menyimpan data dosen.'
-                ]);
+            $dosenSaved = $this->dosenModel->insert($dosenData);
+             if (!$dosenSaved) {
+                log_message('error', '[AdminController] Gagal insert ke dosenModel. Errors: ' . json_encode($this->dosenModel->errors()));
+            } else {
+                $userSaved = $this->userModel->insert($userData);
+                if (!$userSaved) {
+                    log_message('error', '[AdminController] Gagal insert ke userModel. Errors: ' . json_encode($this->userModel->errors()));
+                } else {
+                    $userInsertID = $this->userModel->getInsertID();
+                }
             }
 
-            $db->transCommit();
-            log_message('info', 'Akun dosen berhasil dibuat. NIP: ' . $dosenData['nip'] . ', UserID: ' . $userInsertID);
-            return $this->response->setStatusCode(201)->setJSON([
-                'status' => 'success',
-                'message' => 'Akun dosen berhasil dibuat.',
-                'data' => [
-                    'nip' => $dosenData['nip'],
-                    'user_id' => $userInsertID
-                ]
-            ]);
+
+            if ($db->transStatus() === false || $dosenSaved === false || $userSaved === false) {
+                $db->transRollback();
+                log_message('error', '[AdminController] Transaksi GAGAL dan di-rollback. Dosen saved: ' . ($dosenSaved ? 'true':'false') . ', User saved: ' . ($userSaved ? 'true':'false'));
+                
+                $combinedErrors = array_merge($this->dosenModel->errors() ?: [], $this->userModel->errors() ?: []);
+
+                if ($wantsJson) {
+                  
+                    return $this->response->setStatusCode(400)->setJSON([ // Bisa 400 jika karena validasi model
+                        'status' => 'error',
+                        'message' => 'Penyimpanan data dosen gagal.',
+                        'errors' => $combinedErrors // Gabungkan error dari kedua model
+                    ]);
+                }
+                return redirect()->to(base_url('/admin/dosen/create')) // Kembali ke form create
+                                 ->withInput()
+                                 ->with('error', 'Gagal membuat akun dosen. Periksa kembali data Anda.')
+                                 ->with('errors_dosen', $this->dosenModel->errors()) // Kirim error spesifik model
+                                 ->with('errors_user', $this->userModel->errors());
+            } else {
+                $db->transCommit();
+                log_message('info', '[AdminController] Akun dosen berhasil dibuat. NIP: ' . $dosenData['nip'] . ', UserID: ' . $userInsertID);
+                if ($wantsJson) {
+                    return $this->response->setStatusCode(201)->setJSON([
+                        'status' => 'success',
+                        'message' => 'Akun dosen berhasil dibuat.',
+                        'data' => ['nip' => $dosenData['nip'], 'user_id' => $userInsertID]
+                    ]);
+                }
+                return redirect()->to(base_url('admin/dosen/list')) // Arahkan ke halaman daftar dosen (manageDosen)
+                                 ->with('success', 'Akun dosen ' . esc($dosenData['nama']) . ' berhasil ditambahkan.');
+            }
 
         } catch (DatabaseException $e) {
             $db->transRollback();
@@ -178,7 +202,22 @@ class AdminController extends BaseController
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
              return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
         }
-        $data['dosen'] = $this->dosenModel->findAll();
+        $perPage = 10; // Atur jumlah per halaman
+        $currentPage = $this->request->getVar('page') ?? 1; // Ambil halaman saat ini dari query string, default ke 1
+        // Di AdminController saat mengambil data untuk list
+        $dosenData = $this->dosenModel
+                  ->select('dosen.nip, dosen.nama as nama_dosen, dosen.email as email_dosen, dosen.jabatan, users.username, users.is_active')
+                  ->join('users', 'users.reference_id = dosen.nip AND users.role = \'dosen\'', 'left')
+                  ->paginate($perPage, 'group_name'); // atau findAll() jika tanpa pagination
+        $pager = $this->dosenModel->pager;
+
+        $data = [
+            'dosen_list' => $dosenData,
+            'perPage' => $perPage,
+            'currentPage' => $currentPage,
+            'pager' => $pager,
+        ];
+        return view('admin/manage_dosen', $data);
         return $this->response->setJSON(['status' => 'success', 'data' => $data['dosen']]);
     }
 }

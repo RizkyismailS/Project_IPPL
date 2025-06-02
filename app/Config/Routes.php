@@ -25,7 +25,7 @@ $routes->get('/logout', 'AuthController::logout');
 // Admin Routes (Gunakan grup dengan filter untuk keamanan)
 $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($routes) { // Buat filter adminAuthFilter
     $routes->get('dashboard', 'AdminController::dashboard');
-    $routes->get('dosen/create', 'AdminController::createUserDosen'); // Form
+    $routes->get('dosen/create', 'AdminController::createUserDosenForm'); // Form
     $routes->post('dosen/store', 'AdminController::storeUserDosen'); // Proses simpan
     $routes->get('dosen/list', 'AdminController::listDosen');
 });

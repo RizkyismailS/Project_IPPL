@@ -87,13 +87,13 @@ class AuthController extends BaseController
             } else {
                 $userData['nama_lengkap'] = $user['username']; // Untuk admin
             }
-
+            log_message('info', 'AUTH_LOGIN: User data untuk sesi: ' . json_encode($userData));
             $this->session->set($userData);
             log_message('info', 'AUTH_LOGIN: Sesi diset untuk username: ' . $userData['username'] . ', role: ' . $userData['role'] . ', isLoggedIn: ' . ($userData['isLoggedIn'] ? 'true' : 'false') . ', All session data: ' . json_encode($this->session->get()));
 
             if ($user['role'] === 'admin') {
                 log_message('info', 'AUTH_LOGIN: Redirecting admin ke admin/dashboard');
-                return view('dosen/dashboard'); // <---- belum ditentukan, ganti dengan view admin/dashboard jika ada
+                return view('admin/dashboard'); // <---- belum ditentukan, ganti dengan view admin/dashboard jika ada
                 return redirect()->to(base_url('admin/dashboard'))->with('success', 'Login berhasil!');
             } elseif ($user['role'] === 'dosen') {
                 log_message('info', 'AUTH_LOGIN: Redirecting dosen ke dosen/dashboard');
