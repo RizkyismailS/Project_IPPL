@@ -11,13 +11,12 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="card-title">List Kelas</h5>
-                <a href="/dosen/kelasBaru" class="btn btn-warning">Buat Kelas Baru</a>
+                <a href="kelas/create" class="btn btn-warning">Buat Kelas Baru</a>
             </div>
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" /></th>
                             <th>Nama Kelas</th>
                             <th>Kode Kelas</th>
                             <th>Hari & Jam Kuliah</th>
@@ -28,18 +27,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($kelas as $k): ?>
+                        <?php foreach ($kelas_list as $k): ?>
                         <tr>
-                            <td><input type="checkbox" /></td>
                             <td><?= esc($k['nama_kelas']) ?></td>
                             <td><?= esc($k['kode_kelas']) ?></td>
-                            <td><?= esc($k['hari_jam']) ?></td>
-                            <td><?= esc($k['jumlah']) ?></td>
+                            <td><?= esc($k['hari']) ?></td>
+                            <td><?= esc($k['jumlah_mahasiswa']) ?></td>
                             <td><?= esc($k['semester']) ?>,<?= esc($k['tahun']) ?></td>
                             <td><span class="badge bg-success">Aktif</span></td>
                             <td>
-                                <a href="<?= base_url('kelas/' . $k['id']) ?>" class="btn btn-info btn-sm">Detail</a>
-                                <form action="<?= base_url('kelas/' . $k['id']) ?>" method="post" style="display:inline">
+                                <a href="<?= base_url('dosen/kelas/detail/' . $k['kode_kelas']) ?>" class="btn btn-info btn-sm">Detail Kelas</a>
+                                <form action="<?= base_url('dosen/kelas/delete/' . $k['kode_kelas']) ?>" method="post" style="display:inline">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="_method" value="DELETE">
                                     <button class="btn btn-danger btn-sm">Hapus</button>
