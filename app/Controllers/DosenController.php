@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Models\DosenModel;
 use App\Models\KelasModel;
 use App\Models\MataKuliahModel;
+use App\Models\EnrollmentModel; 
+use App\Models\SesiAbsensiModel; 
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use App\Libraries\RuleExist;
 
@@ -482,7 +484,6 @@ class DosenController extends BaseController
         }
     }
 
-  
     private function getUpdateKelasValidationRules(string $kodeKelas): array
     {
         return [
@@ -544,7 +545,6 @@ class DosenController extends BaseController
         ];
     }
 
-
     /**
      * Handle exceptions in controller methods
      */
@@ -582,6 +582,114 @@ class DosenController extends BaseController
         }
         
         return $redirect;
+    }
+
+    /**
+     * Memproses penghapusan kelas yang diajar oleh dosen.
+     * @param string $kodeKelas Kode kelas yang akan dihapus
+     */
+    public function deleteKelas(string $kodeKelas)
+    {
+        // Filter 'dosenAuthFilter' seharusnya sudah memastikan user adalah dosen dan sudah login
+        $dosenNipLogin = $this->session->get('reference_id');
+        $wantsJson = $this->requestIsJson();
+
+        if (empty($dosenNipLogin)) {
+            // Logika error jika NIP tidak ada di sesi
+            log_message('error', '[DosenController] NIP Dosen tidak ada di sesi saat deleteKelas.');
+            if ($wantsJson) { /* ... response JSON 403 ... */ }
+            return redirect()->to(base_url('/'))->with('error', 'Sesi Anda tidak valid.');
+        }
+
+        // 1. Cek apakah kelas dengan $kodeKelas tersebut ada
+        $kelasToDelete = $this->kelasModel->find($kodeKelas);
+
+        if (!$kelasToDelete) {
+            log_message('error', "[DosenController] Delete: Kelas dengan kode $kodeKelas tidak ditemukan.");
+            if ($wantsJson) { /* ... response JSON 404 ... */ }
+            return redirect()->to(base_url('dosen/kelas'))->with('error', 'Kelas yang akan dihapus tidak ditemukan.');
+        }
+
+        // 2. VALIDASI KEPEMILIKAN KELAS
+        if ($kelasToDelete['dosen_nip'] !== $dosenNipLogin) {
+            log_message('warning', "[DosenController] Delete: Dosen $dosenNipLogin mencoba hapus kelas $kodeKelas yang bukan miliknya.");
+            if ($wantsJson) { /* ... response JSON 403 ... */ }
+            return redirect()->to(base_url('dosen/kelas'))->with('error', 'Anda tidak memiliki hak untuk menghapus kelas ini.');
+        }
+
+        // 3. PERTIMBANGAN SEBELUM DELETE: Cek data terkait
+        // Cek apakah ada mahasiswa yang terdaftar di kelas ini
+        $jumlahMahasiswaTerdaftar = $this->enrollmentModel->where('kode_kelas_enrolled', $kodeKelas)->countAllResults();
+        
+        // Cek apakah ada sesi absensi yang sudah dibuat untuk kelas ini
+        $jumlahSesiAbsensi = $this->sesiAbsensiModel->where('kode_kelas', $kodeKelas)->countAllResults();
+
+        if ($jumlahMahasiswaTerdaftar > 0 || $jumlahSesiAbsensi > 0) {
+            $pesanError = 'Kelas tidak dapat dihapus karena sudah memiliki ';
+            if ($jumlahMahasiswaTerdaftar > 0) {
+                $pesanError .= $jumlahMahasiswaTerdaftar . ' mahasiswa terdaftar';
+            }
+            if ($jumlahMahasiswaTerdaftar > 0 && $jumlahSesiAbsensi > 0) {
+                $pesanError .= ' dan ';
+            }
+            if ($jumlahSesiAbsensi > 0) {
+                $pesanError .= $jumlahSesiAbsensi . ' sesi absensi';
+            }
+            $pesanError .= '. Harap hapus data terkait terlebih dahulu atau arsipkan kelas jika memungkinkan.';
+            
+            log_message('warning', "[DosenController] Delete: Gagal hapus kelas $kodeKelas karena ada data terkait. " . $pesanError);
+            if ($wantsJson) {
+                return $this->response->setStatusCode(409)->setJSON(['status' => 'error', 'message' => $pesanError]); // 409 Conflict
+            }
+            return redirect()->to(base_url('dosen/kelas/detail/' . $kodeKelas))->with('error', $pesanError);
+        }
+
+        // 4. Mulai Transaksi Database (Meskipun hanya satu operasi delete utama,
+        // ini baik untuk jika ada operasi terkait lain di masa depan atau event)
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            $deleted = $this->kelasModel->delete($kodeKelas);
+
+            if ($deleted === false) { // delete() mengembalikan false jika gagal karena error atau tidak ada baris yang terpengaruh
+                $db->transRollback();
+                log_message('error', '[DosenController] Gagal delete dari kelasModel. Kode Kelas: '.$kodeKelas.'. Errors: ' . json_encode($this->kelasModel->errors()));
+                $errorMessage = 'Gagal menghapus kelas.';
+                if(!empty($this->kelasModel->errors())) {
+                    $errorMessage .= ' Error: ' . implode(', ', $this->kelasModel->errors());
+                }
+                if ($wantsJson) { /* ... response JSON 400/500 ... */ }
+                return redirect()->to(base_url('dosen/kelas'))->with('error', $errorMessage);
+            }
+            
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                log_message('error', '[DosenController] Status transaksi database gagal setelah mencoba delete kelas: ' . $kodeKelas);
+                if ($wantsJson) { /* ... response JSON 500 ... */ }
+                return redirect()->to(base_url('dosen/kelas'))->with('error', 'Kesalahan database saat menghapus.');
+            }
+
+            $db->transCommit();
+            log_message('info', '[DosenController] Kelas berhasil dihapus. Kode Kelas: ' . $kodeKelas);
+            if ($wantsJson) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Kelas "' . esc($kelasToDelete['nama_kelas']) . '" berhasil dihapus.'
+                ]);
+            }
+            return redirect()->to(base_url('dosen/kelas'))
+                             ->with('success', 'Kelas "' . esc($kelasToDelete['nama_kelas']) . '" berhasil dihapus.');
+
+        } catch (DatabaseException $e) {
+            $db->transRollback();
+            log_message('error', '[DosenController] DatabaseException saat delete kelas: ' . $kodeKelas . ' - ' . $e->getMessage());
+            // ... (response error 500) ...
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[DosenController] General Exception saat delete kelas: ' . $kodeKelas . ' - ' . $e->getMessage());
+            // ... (response error 500) ...
+        }
     }
 
     // Helper method
