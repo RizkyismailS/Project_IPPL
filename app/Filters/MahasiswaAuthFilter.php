@@ -12,7 +12,7 @@ class MahasiswaAuthFilter implements FilterInterface
     {
         // Check if user is logged in
         if (!session()->has('isLoggedIn')) {
-            return redirect()->to('/login/auth')->with('error', 'Silakan login terlebih dahulu');
+            return redirect()->to('/')->with('error', 'Silakan login terlebih dahulu');
         }
         
         // Check if user role is mahasiswa

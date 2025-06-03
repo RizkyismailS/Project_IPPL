@@ -5,13 +5,13 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'mahasiswa::enroll');
 $routes->get('/hello', function() {
     return 'Hello from Laragon CI4!';
 });
 
 // Auth Routes
-$routes->get('/login/auth', 'AuthController::login');
+
+$routes->get('/', 'AuthController::login');
 $routes->post('/login/process', 'AuthController::processLogin');
 $routes->get('/register/mahasiswa', 'AuthController::registerMahasiswa');
 $routes->post('/register/mahasiswa/process', 'AuthController::processRegisterMahasiswa');
@@ -39,7 +39,7 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
     $routes->post('kelas/store', 'DosenController::storeKelas');    // Memproses penyimpanan kelas baru
     $routes->get('kelas/detail/(:segment)', 'DosenController::detailKelas/$1'); // <--- ROUTE INI
     $routes->get('kelas/edit/(:segment)', 'DosenController::editKelasForm/$1');   // Untuk form edit kelas
-    $routes->post('kelas/update/(:segment)', 'DosenController::updateKelas/$1'); // Untuk proses update kelas
+    $routes->put('kelas/update/(:segment)', 'DosenController::updateKelas/$1'); // Untuk proses update kelas
     $routes->post('kelas/delete/(:segment)', 'DosenController::deleteKelas/$1'); // Untuk hapus kelas
 });
 

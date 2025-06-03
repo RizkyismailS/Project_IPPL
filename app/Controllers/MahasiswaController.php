@@ -29,7 +29,7 @@ class MahasiswaController extends BaseController
         log_message('critical', 'MAHASISWA_CONTROLLER: Masuk MahasiswaController::dashboard. Sesi: ' . json_encode($this->session->get()));
         // Cek sesi mahasiswa
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'mahasiswa') {
-            return redirect()->to(base_url('login/auth'))->with('error', 'Silakan login terlebih dahulu');
+            return redirect()->to(base_url('/'))->with('error', 'Silakan login terlebih dahulu');
         }
         $nimMahasiswa = $this->session->get('reference_id');
         $mahasiswaInfo = $this->mahasiswaModel->find($nimMahasiswa);

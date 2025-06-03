@@ -262,10 +262,28 @@ class AuthController extends BaseController
         }
     }
 
+    public function registerMahasiswa()
+    {
+        if ($this->session->get('isLoggedIn')) {
+            // Redirect ke dashboard yang sesuai jika sudah login
+            $role = $this->session->get('role');
+            if ($role === 'admin') return redirect()->to(base_url('admin/dashboard'));
+            if ($role === 'dosen') return redirect()->to(base_url('dosen/dashboard'));
+            if ($role === 'mahasiswa') return redirect()->to(base_url('mahasiswa/dashboard'));
+            return redirect()->to(base_url('/')); // Fallback jika peran tidak dikenal
+        }
+
+        $data['title'] = 'Registrasi Akun Mahasiswa';
+        // Ini untuk menangani error jika ada redirect dari processRegisterMahasiswa (submit form non-AJAX)
+        $data['errors'] = session()->getFlashdata('errors');
+        $data['error_umum'] = session()->getFlashdata('error_umum'); // Menggunakan 'error_umum'
+
+        return view('auth/register', $data);
+    }
 
     public function logout()
     {
         $this->session->destroy();
-        return redirect()->to(base_url('login/auth'))->with('success', 'Anda telah berhasil logout.');
+        return redirect()->to(base_url('/'))->with('success', 'Anda telah berhasil logout.');
     }
 }

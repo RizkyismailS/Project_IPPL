@@ -24,7 +24,7 @@ class AdminAuthFilter implements FilterInterface
                     'message' => 'Akses ditolak. Anda harus login terlebih dahulu.'
                 ]);
             }
-            return redirect()->to(base_url('login/auth'))->with('error', 'Anda harus login untuk mengakses halaman ini.');
+            return redirect()->to(base_url('/'))->with('error', 'Anda harus login untuk mengakses halaman ini.');
         }
 
         if ($session->get('role') !== 'admin') {
