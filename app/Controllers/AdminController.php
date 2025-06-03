@@ -248,11 +248,11 @@ class AdminController extends BaseController
         // Dapatkan user ID terkait jika ada
         $userAccount = $this->userModel->where('reference_id', $nip)->where('role', 'dosen')->first();
         $userIdToIgnore = $userAccount ? $userAccount['id_user'] : null;
-    log_message('critical', "[DEBUG_UPDATE_DOSEN] NIP dari URL: " . $nip);
-    log_message('critical', "[DEBUG_UPDATE_DOSEN] User Account ditemukan: " . ($userAccount ? json_encode($userAccount) : 'Tidak ada'));
-    log_message('critical', "[DEBUG_UPDATE_DOSEN] User ID untuk diabaikan (userIdToIgnore): " . $userIdToIgnore);
-    log_message('critical', "[DEBUG_UPDATE_DOSEN] Data request (email_dosen): " . $this->request->getVar('email_dosen'));
-    log_message('critical', "[DEBUG_UPDATE_DOSEN] Data request (username_dosen): " . $this->request->getVar('username_dosen'));
+        log_message('critical', "[DEBUG_UPDATE_DOSEN] NIP dari URL: " . $nip);
+        log_message('critical', "[DEBUG_UPDATE_DOSEN] User Account ditemukan: " . ($userAccount ? json_encode($userAccount) : 'Tidak ada'));
+        log_message('critical', "[DEBUG_UPDATE_DOSEN] User ID untuk diabaikan (userIdToIgnore): " . $userIdToIgnore);
+        log_message('critical', "[DEBUG_UPDATE_DOSEN] Data request (email_dosen): " . $this->request->getVar('email_dosen'));
+        log_message('critical', "[DEBUG_UPDATE_DOSEN] Data request (username_dosen): " . $this->request->getVar('username_dosen'));
 
         // 2. Aturan Validasi untuk Update
         // is_unique perlu mengabaikan record saat ini
@@ -378,23 +378,39 @@ class AdminController extends BaseController
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
              return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
         }
-        $perPage = 10; // Atur jumlah per halaman
-        $currentPage = $this->request->getVar('page') ?? 1; // Ambil halaman saat ini dari query string, default ke 1
-        // Di AdminController saat mengambil data untuk list
-        $dosenData = $this->dosenModel
-                  ->select('dosen.nip, dosen.nama as nama_dosen, dosen.email as email_dosen, dosen.jabatan, users.username, users.is_active')
-                  ->join('users', 'users.reference_id = dosen.nip AND users.role = \'dosen\'', 'left')
-                  ->paginate($perPage, 'group_name'); // atau findAll() jika tanpa pagination
+        $perPage = 10;
+        $currentPage = $this->request->getVar('page') ?? 1;
+        $search = $this->request->getVar('search');
+        $status = $this->request->getVar('status');
+
+        $dosenModel = $this->dosenModel
+        ->select('dosen.nip, dosen.nama as nama_dosen, dosen.email as email_dosen, dosen.jabatan, users.username, users.is_active')
+        ->join('users', 'users.reference_id = dosen.nip AND users.role = \'dosen\'', 'left');
+
+        // Search by name or NIP
+        if ($search) {
+            $dosenModel->groupStart()
+                ->like('dosen.nama', $search)
+                ->orLike('dosen.nip', $search)
+                ->groupEnd();
+        }
+
+        // Filter by status
+        if ($status !== null && $status !== '') {
+            $dosenModel->where('users.is_active', $status);
+        }
+
+        $dosenData = $dosenModel->paginate($perPage, 'default');
         $pager = $this->dosenModel->pager;
 
-        $data = [
+        return view('admin/manage_dosen', [
             'dosen_list' => $dosenData,
             'perPage' => $perPage,
             'currentPage' => $currentPage,
             'pager' => $pager,
-        ];
-        return view('admin/manage_dosen', $data);
-        return $this->response->setJSON(['status' => 'success', 'data' => $data['dosen']]);
+            'search' => $search,
+            'status' => $status,
+        ]);
     }
 
     public function deleteDosen(string $nip)
@@ -403,7 +419,7 @@ class AdminController extends BaseController
         // 1. Cek apakah dosen dengan NIP tersebut ada
         $dosenProfil = $this->dosenModel->find($nip);
         if (!$dosenProfil) {
-            return redirect()->to(base_url('admin/dosen'))
+            return redirect()->to(base_url('admin/dosen/list'))
                              ->with('error', 'Data dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
         }
 
@@ -467,13 +483,13 @@ class AdminController extends BaseController
                         'message' => $message
                     ]);
                 }
-                return redirect()->to(base_url('admin/dosen'))
+                return redirect()->to(base_url('admin/dosen/list'))
                                  ->with('error', $message);
             } else {
                 $db->transCommit();
                 log_message('info', '[AdminController] Data dosen dan akun terkait (jika ada) untuk NIP: ' . $nip . ' berhasil dihapus.');
                
-                return redirect()->to(base_url('admin/dosen'))
+                return redirect()->to(base_url('admin/dosen/list'))
                                  ->with('success', 'Data dosen ' . esc($dosenProfil['nama']) . ' (NIP: ' . esc($nip) . ') dan akun terkait berhasil dihapus.');
             }
 
@@ -481,12 +497,12 @@ class AdminController extends BaseController
             $db->transRollback();
             log_message('error', '[AdminController] DatabaseException saat delete akun dosen NIP: ' . $nip . ' - ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             $errorMessage = 'Terjadi kesalahan fatal pada database saat menghapus data.';
-            return redirect()->to(base_url('admin/dosen'))->with('error', $errorMessage);
+            return redirect()->to(base_url('admin/dosen/list'))->with('error', $errorMessage);
         } catch (\Exception $e) {
             $db->transRollback();
             log_message('error', '[AdminController] Exception umum saat delete akun dosen NIP: ' . $nip . ' - ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             $errorMessage = 'Terjadi kesalahan tidak terduga saat menghapus data.';
-            return redirect()->to(base_url('admin/dosen'))->with('error', $errorMessage);
+            return redirect()->to(base_url('admin/dosen/list'))->with('error', $errorMessage);
         }
     }
 
@@ -500,7 +516,7 @@ class AdminController extends BaseController
                                        ->where('role', 'dosen')
                                        ->first();
         if (!$userAccount) {
-        return redirect()->to(base_url('admin/dosen'))
+        return redirect()->to(base_url('admin/dosen/list'))
                                     ->with('error', 'Akun login untuk dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
         }
 

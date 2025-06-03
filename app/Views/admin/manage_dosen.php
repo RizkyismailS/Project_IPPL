@@ -46,12 +46,15 @@
             <?php endif; ?>
 
             <div class="d-flex justify-content-between mb-3">
-                 <input type="text" class="form-control w-50" placeholder="Cari Dosen...">
-                <select class="form-select w-auto ms-2">
-                    <option value="">Semua Status</option>
-                    <option value="1">Aktif</option>
-                    <option value="0">Tidak Aktif</option>
-                </select> 
+                <form class="d-flex w-100" method="get" action="<?= base_url('admin/dosen/list') ?>">
+                    <input type="text" name="search" class="form-control w-50" placeholder="Cari Dosen..." value="<?= esc($search ?? '') ?>">
+                    <select name="status" class="form-select w-auto ms-2">
+                        <option value="">Semua Status</option>
+                        <option value="1" <?= (isset($status) && $status === '1') ? 'selected' : '' ?>>Aktif</option>
+                        <option value="0" <?= (isset($status) && $status === '0') ? 'selected' : '' ?>>Tidak Aktif</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary ms-2"><i class="bi bi-search"></i> Cari</button>
+                </form>
             </div>
 
             <div class="table-responsive">
@@ -124,8 +127,7 @@
 
             <?php if (isset($pager) && $pager->getPageCount() > 1): ?>
                 <nav aria-label="Page navigation">
-                    <?= $pager->links('default', 'bootstrap_mazer_template') // Sesuaikan dengan nama grup pager jika ada & template pager ?>
-                </nav>
+<?= $pager->appends(['search' => $search, 'status' => $status])->links('default', 'bootstrap_mazer_template') ?>                </nav>
             <?php endif; ?>
         </div>
     </div>
