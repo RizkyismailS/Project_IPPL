@@ -396,4 +396,159 @@ class AdminController extends BaseController
         return view('admin/manage_dosen', $data);
         return $this->response->setJSON(['status' => 'success', 'data' => $data['dosen']]);
     }
+
+    public function deleteDosen(string $nip)
+    {
+
+        // 1. Cek apakah dosen dengan NIP tersebut ada
+        $dosenProfil = $this->dosenModel->find($nip);
+        if (!$dosenProfil) {
+            return redirect()->to(base_url('admin/dosen'))
+                             ->with('error', 'Data dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
+        }
+
+        // Dapatkan user ID terkait jika ada (untuk dihapus dari tabel users)
+        $userAccount = $this->userModel->where('reference_id', $nip)
+                                       ->where('role', 'dosen')
+                                       ->first();
+
+        // 2. Mulai Transaksi Database
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        $userDeleted = false;
+        $dosenDeleted = false;
+
+        try {
+            // Hapus dari tabel users terlebih dahulu (jika ada akun terkait)
+            if ($userAccount) {
+                $userDeleted = $this->userModel->delete($userAccount['id_user']);
+                if ($userDeleted === false) {
+                    log_message('error', '[AdminController] Gagal menghapus dari userModel. UserID: '.$userAccount['id_user'].'. Errors: ' . json_encode($this->userModel->errors()));
+                    // Tidak perlu rollback di sini, akan dihandle di akhir
+                } else {
+                    log_message('info', '[AdminController] Akun user untuk dosen NIP: ' . $nip . ' (UserID: ' . $userAccount['id_user'] . ') berhasil dihapus.');
+                }
+            } else {
+                // Tidak ada akun user terkait, jadi anggap penghapusan user "berhasil" (tidak ada yang dilakukan)
+                $userDeleted = true;
+                log_message('info', '[AdminController] Tidak ada akun user terkait untuk dosen NIP: ' . $nip . ' saat proses delete.');
+            }
+
+            // Hapus dari tabel dosen HANYA JIKA penghapusan user (jika ada) dianggap berhasil
+            // atau jika tidak ada user account terkait.
+            if ($userDeleted) { // Jika user berhasil dihapus atau memang tidak ada user
+                $dosenDeleted = $this->dosenModel->delete($nip);
+                if ($dosenDeleted === false) {
+                    log_message('error', '[AdminController] Gagal menghapus dari dosenModel. NIP: '.$nip.'. Errors: ' . json_encode($this->dosenModel->errors()));
+                } else {
+                    log_message('info', '[AdminController] Data profil dosen NIP: ' . $nip . ' berhasil dihapus.');
+                }
+            }
+
+
+            // Cek status transaksi dan hasil kedua operasi delete
+            if ($db->transStatus() === false || $dosenDeleted === false || $userDeleted === false) {
+                $db->transRollback();
+                log_message('error', '[AdminController] Transaksi DELETE GAGAL dan di-rollback. NIP: '.$nip.'. Dosen deleted: ' . ($dosenDeleted ? 'true':'false') . ', User deleted: ' . ($userDeleted ? 'true':'false'));
+                
+                $message = 'Gagal menghapus data dosen.';
+                if (!$dosenDeleted && !empty($this->dosenModel->errors())) {
+                    $message .= ' Error profil: ' . implode(', ', $this->dosenModel->errors());
+                }
+                if (!$userDeleted && !empty($this->userModel->errors()) && $userAccount) { // Hanya jika ada user account dan gagal
+                    $message .= ' Error akun: ' . implode(', ', $this->userModel->errors());
+                }
+
+
+                if ($wantsJson) {
+                    return $this->response->setStatusCode(400)->setJSON([
+                        'status' => 'error',
+                        'message' => $message
+                    ]);
+                }
+                return redirect()->to(base_url('admin/dosen'))
+                                 ->with('error', $message);
+            } else {
+                $db->transCommit();
+                log_message('info', '[AdminController] Data dosen dan akun terkait (jika ada) untuk NIP: ' . $nip . ' berhasil dihapus.');
+               
+                return redirect()->to(base_url('admin/dosen'))
+                                 ->with('success', 'Data dosen ' . esc($dosenProfil['nama']) . ' (NIP: ' . esc($nip) . ') dan akun terkait berhasil dihapus.');
+            }
+
+        } catch (DatabaseException $e) {
+            $db->transRollback();
+            log_message('error', '[AdminController] DatabaseException saat delete akun dosen NIP: ' . $nip . ' - ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            $errorMessage = 'Terjadi kesalahan fatal pada database saat menghapus data.';
+            return redirect()->to(base_url('admin/dosen'))->with('error', $errorMessage);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[AdminController] Exception umum saat delete akun dosen NIP: ' . $nip . ' - ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            $errorMessage = 'Terjadi kesalahan tidak terduga saat menghapus data.';
+            return redirect()->to(base_url('admin/dosen'))->with('error', $errorMessage);
+        }
+    }
+
+    public function activateDosen(string $nip)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
+        }
+
+        $userAccount = $this->userModel->where('reference_id', $nip)
+                                       ->where('role', 'dosen')
+                                       ->first();
+        if (!$userAccount) {
+        return redirect()->to(base_url('admin/dosen'))
+                                    ->with('error', 'Akun login untuk dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
+        }
+
+        try {
+            if ($this->userModel->update($userAccount['id_user'], ['is_active' => 1])) {
+                log_message('info', '[AdminController] Akun dosen NIP: ' . $nip . ' (UserID: ' . $userAccount['id_user'] . ') berhasil diaktifkan.');
+                return redirect()->to(base_url('admin/dosen/list'))
+                                 ->with('success', 'Akun login untuk dosen NIP ' . esc($nip) . ' berhasil diaktifkan.');
+            } else {
+                log_message('error', '[AdminController] Gagal mengaktifkan akun dosen NIP: ' . $nip . '. Errors: ' . json_encode($this->userModel->errors()));
+                return redirect()->to(base_url('admin/dosen/list'))
+                                 ->with('error', 'Gagal mengaktifkan akun dosen. Error: ' . json_encode($this->userModel->errors()));
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[AdminController] Exception saat aktivasi akun dosen NIP: ' . $nip . ' - ' . $e->getMessage());
+            return redirect()->to(base_url('admin/dosen/list'))
+                             ->with('error', 'Terjadi kesalahan server saat mencoba mengaktifkan akun.');
+        }
+    }
+
+    public function deactivateDosen(string $nip)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak.']);
+        }
+
+        $userAccount = $this->userModel->where('reference_id', $nip)
+                                       ->where('role', 'dosen')
+                                       ->first();
+        if (!$userAccount) {
+            return redirect()->to(base_url('admin/dosen/list'))
+                             ->with('error', 'Akun login untuk dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
+        }
+
+        try {
+            if ($this->userModel->update($userAccount['id_user'], ['is_active' => 0])) {
+                log_message('info', '[AdminController] Akun dosen NIP: ' . $nip . ' (UserID: ' . $userAccount['id_user'] . ') berhasil dinonaktifkan.');
+                return redirect()->to(base_url('admin/dosen/list'))
+                                 ->with('success', 'Akun login untuk dosen NIP ' . esc($nip) . ' berhasil dinonaktifkan.');
+            } else {
+                log_message('error', '[AdminController] Gagal menonaktifkan akun dosen NIP: ' . $nip . '. Errors: ' . json_encode($this->userModel->errors()));
+                return redirect()->to(base_url('admin/dosen/list'))
+                                 ->with('error', 'Gagal menonaktifkan akun dosen. Error: ' . json_encode($this->userModel->errors()));
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[AdminController] Exception saat menonaktifkan akun dosen NIP: ' . $nip . ' - ' . $e->getMessage());
+            return redirect()->to(base_url('admin/dosen/list'))
+                             ->with('error', 'Terjadi kesalahan server saat mencoba menonaktifkan akun.');
+        }
+    }
 }
