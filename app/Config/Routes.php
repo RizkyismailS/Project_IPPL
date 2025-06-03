@@ -6,11 +6,6 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'mahasiswa::enroll');
-$routes->get('dosen/dashboard', 'Dosen::index');
-$routes->get('dosen/listkelas', 'Dosen::listkelas');
-$routes->get('dosen/listAbsensi', 'Dosen::listAbsensi');
-$routes->get('dosen/kelasBaru', 'Dosen::kelasBaru');
-$routes->get('dosen/absensi', 'Dosen::absensi');
 $routes->get('/hello', function() {
     return 'Hello from Laragon CI4!';
 });
@@ -37,8 +32,15 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
 
 // Dosen Routes (Gunakan grup dengan filter)
 $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($routes) { // Buat filter dosenAuthFilter
-    $routes->get('dosen/dashboard', 'DosenController::dashboard');
+    $routes->get('dashboard', 'DosenController::dashboard');
     $routes->get('profile', 'DosenController::profile');
+    $routes->get('kelas', 'DosenController::listKelas'); // Menampilkan daftar kelas
+    $routes->get('kelas/create', 'DosenController::createKelasForm'); // Menampilkan form tambah kelas
+    $routes->post('kelas/store', 'DosenController::storeKelas');    // Memproses penyimpanan kelas baru
+    $routes->get('kelas/detail/(:segment)', 'DosenController::detailKelas/$1'); // <--- ROUTE INI
+    $routes->get('kelas/edit/(:segment)', 'DosenController::editKelasForm/$1');   // Untuk form edit kelas
+    $routes->post('kelas/update/(:segment)', 'DosenController::updateKelas/$1'); // Untuk proses update kelas
+    $routes->post('kelas/delete/(:segment)', 'DosenController::deleteKelas/$1'); // Untuk hapus kelas
 });
 
 // Mahasiswa Routes (Gunakan grup dengan filter)

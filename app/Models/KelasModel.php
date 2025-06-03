@@ -38,13 +38,13 @@ class KelasModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'kode_kelas'        => 'required|alpha_numeric_dash|max_length[20]|is_unique[kelas.kode_kelas]',
+        'kode_kelas'        => 'required|alpha_dash|max_length[20]|is_unique[kelas.kode_kelas]',
         'nama_kelas'        => 'required|string|max_length[100]',
-        'kode_matakuliah'   => 'required|exists[matakuliah.kode_matakuliah]',
-        'dosen_nip'         => 'required|exists[dosen.nip]',
+        'kode_matakuliah'   => 'required',
+        'dosen_nip'         => 'required',
         'hari'              => 'required|in_list[Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu]',
-        'waktu_mulai_kelas' => 'required|valid_time', 
-        'waktu_selesai_kelas' => 'required|valid_time',
+        'waktu_mulai_kelas' => 'required', 
+        'waktu_selesai_kelas' => 'required',
         'ruangan'           => 'permit_empty|string|max_length[50]',
         'tahun_ajaran'      => 'required|string|max_length[10]',
         'semester'          => 'required|string|max_length[20]', 
@@ -61,11 +61,9 @@ class KelasModel extends Model
         ],
         'kode_matakuliah' => [
             'required' => 'Mata kuliah wajib dipilih.',
-            'exists'   => 'Mata kuliah yang dipilih tidak valid atau tidak ada di database.'
         ],
         'dosen_nip' => [
             'required' => 'Dosen pengampu wajib dipilih.',
-            'exists'   => 'Dosen pengampu yang dipilih tidak valid atau tidak ada di database.'
         ],
         'hari' => [
             'required' => 'Hari wajib dipilih.',
@@ -120,7 +118,7 @@ class KelasModel extends Model
      */
     public function getAllKelasWithDetail(
         int $perPage = 10, 
-        string $group = 'kelas_dosen', // Beri nama grup pager yang unik
+        string $group = 'kelas_dosen',
         ?string $dosenNip = null, 
         ?string $searchTerm = null,
         ?string $filterTahunAjaran = null,
@@ -155,7 +153,37 @@ class KelasModel extends Model
                 ->orderBy('kelas.semester', 'DESC')
                 ->orderBy('kelas.nama_kelas', 'ASC');
 
-        return $builder->paginate($perPage, $group);
+        $result = $builder->paginate($perPage, $group);
+    
+        // Modifikasi: Ambil pager sebelum loop karena loop memodifikasi $result by reference
+        // Jika Anda membutuhkan pager instance di controller, Anda akan mengambilnya setelah paginate
+        // $this->pager = $this->db->pager; // Ini akan diset oleh CI4 setelah paginate
+
+        if (is_array($result)) { // Pastikan $result adalah array sebelum loop
+            foreach ($result as &$row) { // Gunakan & untuk modifikasi by reference
+                if (is_array($row) && isset($row['kode_kelas'])) { // Pastikan $row adalah array dan punya 'kode_kelas'
+                    $row['jumlah_mahasiswa'] = $this->getJumlahMahasiswaByKelas($row['kode_kelas']);
+                    $row['tahun'] = $row['tahun_ajaran'] ?? null; // Tambahkan ?? null untuk fallback
+                }
+            }
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Mendapatkan jumlah mahasiswa yang terdaftar di sebuah kelas.
+     * @param string $kodeKelas
+     * @return int
+     */
+    public function getJumlahMahasiswaByKelas(string $kodeKelas): int // Direvisi menjadi public agar bisa diakses jika perlu dari luar
+    {
+        $db = \Config\Database::connect();
+        // Asumsi tabel enrollment Anda bernama 'enrollment'
+        // dan kolom yang merujuk ke kode_kelas adalah 'kode_kelas_enrolled'
+        return $db->table('enrollment') 
+                  ->where('kode_kelas_enrolled', $kodeKelas) // <--- PERUBAHAN DI SINI
+                  ->countAllResults();
     }
 
     /**
@@ -163,7 +191,7 @@ class KelasModel extends Model
      * @param string $kodeEnrollment
      * @return array|null
      */
-    public function findByKodeEnrollment(string $kodeEnrollment): ?array
+    public function findByKodeEnrollment(string $kodeEnrollment)
     {
         if (empty($kodeEnrollment)) {
             return null;
