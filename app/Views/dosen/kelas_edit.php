@@ -2,16 +2,15 @@
 
 <?= $this->section('content') ?>
 <?php
-// $breadcrumb = 'Edit Kelas';
-// $pageTitle = $title ?? 'Edit Kelas';
-// echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle')); 
+$breadcrumb = 'Edit Kelas';
+$pageTitle = $title ?? 'Edit Kelas';
+echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle')); 
 ?>
 
 <div class="page-heading">
     <div class="page-title">
         <div class="row">
             <div class="col-12 col-md-6 order-md-1 order-last">
-                <h3><?= esc($title ?? 'Edit Kelas') ?></h3>
                 <?php if (isset($kelas['nama_kelas'])): ?>
                     <p class="text-subtitle text-muted">Mengubah detail untuk kelas: <?= esc($kelas['nama_kelas']) ?> (<?= esc($kelas['kode_kelas']) ?>)</p>
                 <?php endif; ?>

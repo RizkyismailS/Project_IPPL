@@ -35,7 +35,7 @@
                             <td><?= esc($k['jumlah_mahasiswa']) ?></td>
                             <td><?= esc($k['semester']) ?>,<?= esc($k['tahun']) ?></td>
                             <td><span class="badge bg-success">Aktif</span></td>
-                            <td>
+                            <td>    
                                 <a href="<?= base_url('dosen/kelas/detail/' . $k['kode_kelas']) ?>" class="btn btn-info btn-sm">Detail Kelas</a>
                                 <form action="<?= base_url('dosen/kelas/delete/' . $k['kode_kelas']) ?>" method="post" style="display:inline">
                                     <?= csrf_field() ?>

@@ -12,8 +12,27 @@ use App\Libraries\RuleExist;
 
 class DosenController extends BaseController
 {
-    // Add these helper methods at the end of your DosenController class
 
+    protected $dosenModel;
+    protected $kelasModel;
+    protected $mataKuliahModel;
+    protected $enrollmentModel; 
+    protected $sesiAbsensiModel;
+    protected $session;
+
+    public function __construct()
+    {
+        $this->dosenModel = new DosenModel();
+        $this->kelasModel = new KelasModel();
+        $this->mataKuliahModel = new MataKuliahModel();
+        $this->enrollmentModel = new EnrollmentModel();
+        $this->sesiAbsensiModel = new SesiAbsensiModel();
+        $this->session = \Config\Services::session();
+        helper(['form', 'url']);
+        // PENTING: Terapkan DosenAuthFilter melalui Routes
+    }
+
+    
     private function validateMatakuliah($kode_matakuliah) {
         return $this->mataKuliahModel->find($kode_matakuliah) !== null;
     }
@@ -24,21 +43,6 @@ class DosenController extends BaseController
 
     private function validateTimeSequence($start, $end) {
         return strtotime($end) > strtotime($start);
-    }
-
-    protected $dosenModel;
-    protected $kelasModel;
-    protected $mataKuliahModel;
-    protected $session;
-
-    public function __construct()
-    {
-        $this->dosenModel = new DosenModel();
-        $this->kelasModel = new KelasModel();
-        $this->mataKuliahModel = new MataKuliahModel();
-        $this->session = \Config\Services::session();
-        helper(['form', 'url']);
-        // PENTING: Terapkan DosenAuthFilter melalui Routes
     }
 
     public function dashboard()
@@ -545,9 +549,6 @@ class DosenController extends BaseController
         ];
     }
 
-    /**
-     * Handle exceptions in controller methods
-     */
     private function handleException(\Exception $e, $db, string $kodeKelas, string $type, bool $wantsJson)
     {
         $db->transRollback();
