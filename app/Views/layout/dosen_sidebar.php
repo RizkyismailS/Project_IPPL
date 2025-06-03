@@ -17,7 +17,7 @@
       <li><a href="/dosen/kelas" class="sidebar-link"><i class="bi bi-person-fill"></i> <span>Buat kelas Baru</span></a></li>
       <li><a href="/dosen/listAbsensi" class="sidebar-link"><i class="bi bi-book-fill"></i> <span>Buat sesi Absensi</span></a></li>
       <li><a href="/dosen/profile" class="sidebar-link"><i class="bi bi-pencil-fill"></i> <span>profile</span></a></li>
-      <li><a href="/dosen/logout" class="sidebar-link"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a></li>
+      <li><a href="/logout" class="sidebar-link"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a></li>
         </ul>
     </div>
   </div>
