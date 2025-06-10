@@ -41,6 +41,7 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
     $routes->get('kelas/edit/(:segment)', 'DosenController::editKelasForm/$1');   // Untuk form edit kelas
     $routes->put('kelas/update/(:segment)', 'DosenController::updateKelas/$1'); // Untuk proses update kelas
     $routes->delete('kelas/delete/(:segment)', 'DosenController::deleteKelas/$1'); // Untuk hapus kelas
+    $routes->post('enrollment/manage', 'DosenController::manageEnrollment'); // Untuk mengelola enrollment mahasiswa
 });
 
 // Mahasiswa Routes (Gunakan grup dengan filter)

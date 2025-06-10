@@ -270,20 +270,105 @@ class DosenController extends BaseController
             return redirect()->to(base_url('dosen/kelas'))->with('error', 'Anda tidak memiliki hak untuk melihat detail kelas ini.');
         }
 
-        $data['title'] = 'Detail Kelas: ' . esc($kelas['nama_kelas']);
-        $data['kelas'] = $kelas; 
+        $enrollmentModel = new EnrollmentModel();
+        $mahasiswaTerdaftar = $enrollmentModel->getMahasiswaByKelas($kodeKelas);
+
+        $data = [
+            'title' => 'Detail Kelas: ' . esc($kelas['nama_kelas']),
+            'kelas' => $kelas,
+            'mahasiswa_terdaftar' => $mahasiswaTerdaftar,
+            'jumlah_mahasiswa_terdaftar' => count($mahasiswaTerdaftar) 
+
+        ];
+
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
 
-        // Di sini Anda juga bisa mengambil data lain terkait kelas ini, misalnya:
-        // 1. Daftar mahasiswa yang terdaftar (memerlukan EnrollmentModel)
-        //    $enrollmentModel = new \App\Models\EnrollmentModel();
-        //    $data['mahasiswa_terdaftar'] = $enrollmentModel->getMahasiswaByKelas($kodeKelas);
-
-        // 2. Daftar sesi absensi yang sudah dibuat untuk kelas ini (memerlukan SesiAbsensiModel)
-        //    $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
-        //    $data['sesi_absensi_list'] = $sesiAbsensiModel->getSesiByKelas($kodeKelas);
-
         return view('dosen/detailKelas', $data);
+    }
+
+    /**
+     * Mengelola status pendaftaran mahasiswa (Aktifkan / Nonaktifkan).
+     */
+    public function manageEnrollment()
+    {
+        $enrollmentId = $this->request->getPost('id_enrollment');
+        $action = $this->request->getPost('action');
+        $dosenNipLogin = $this->session->get('reference_id');
+        
+        // Validate inputs
+        if (empty($enrollmentId) || empty($action)) {
+            log_message('error', '[DosenController] manageEnrollment: Missing required parameters');
+            return redirect()->back()->with('error', 'Parameter tidak lengkap.');
+        }
+
+        // Check valid actions
+        if (!in_array($action, ['activate', 'deactivate'])) {
+            log_message('error', '[DosenController] manageEnrollment: Invalid action: ' . $action);
+            return redirect()->back()->with('error', 'Aksi tidak valid.');
+        }
+
+        $enrollmentModel = new EnrollmentModel();
+        
+        // Get enrollment data
+        $enrollment = $enrollmentModel->find($enrollmentId);
+        if (!$enrollment) {
+            log_message('error', '[DosenController] Enrollment data not found for ID: ' . $enrollmentId);
+            return redirect()->back()->with('error', 'Data pendaftaran tidak ditemukan.');
+        }
+
+        // Debug enrollment data
+        log_message('debug', '[DosenController] Enrollment data: ' . json_encode($enrollment));
+
+        // Check if kelas exists and belongs to the current dosen
+        $kelas = $this->kelasModel->find($enrollment['kode_kelas_enrolled']);
+        if (!$kelas) {
+            log_message('error', '[DosenController] Class not found: ' . $enrollment['kode_kelas_enrolled']);
+            return redirect()->back()->with('error', 'Data kelas tidak ditemukan.');
+        }
+        
+        // Check if dosen owns this class
+        if ($kelas['dosen_nip'] !== $dosenNipLogin) {
+            log_message('warning', "[DosenController] Unauthorized access: Dosen $dosenNipLogin tried to manage enrollment for class owned by {$kelas['dosen_nip']}");
+            return redirect()->back()->with('error', 'Anda tidak memiliki hak untuk melakukan aksi ini.');
+        }
+
+        // Prepare update data based on action
+        $newStatus = ($action === 'activate') ? 'aktif' : 'dinonaktifkan';
+        
+        // Use transaction for better data integrity
+        $db = \Config\Database::connect();
+        $db->transBegin();
+        
+        try {
+            // Update the enrollment status and check result
+            $updated = $enrollmentModel->update($enrollmentId, ['status_enrollment' => $newStatus]);
+            
+            if ($updated === false) {
+                $db->transRollback();
+                log_message('error', "[DosenController] Failed to update enrollment status: " . json_encode($enrollmentModel->errors()));
+                return redirect()->back()->with('error', 'Gagal mengubah status pendaftaran.');
+            }
+            
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                log_message('error', '[DosenController] Database transaction status failed during enrollment update');
+                return redirect()->back()->with('error', 'Kesalahan database saat memperbarui status.');
+            }
+            
+            $db->transCommit();
+            log_message('debug', "[DosenController] Enrollment ID: $enrollmentId successfully updated to status: $newStatus");
+            
+            $message = ($action === 'activate') ? 
+                'Status mahasiswa berhasil diaktifkan kembali.' : 
+                'Status mahasiswa berhasil dinonaktifkan.';
+                
+            return redirect()->back()->with('success', $message);
+        
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[DosenController] Exception during enrollment update: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
+        }
     }
 
     /**

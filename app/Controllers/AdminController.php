@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Models\DosenModel;
 use App\Models\UserModel;
-use CodeIgniter\Database\Exceptions\DatabaseException; // Tambahkan ini
+use CodeIgniter\Database\Exceptions\DatabaseException; 
 
 class AdminController extends BaseController
 {

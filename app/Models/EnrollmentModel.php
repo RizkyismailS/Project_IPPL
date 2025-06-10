@@ -31,7 +31,7 @@ class EnrollmentModel extends Model
     protected $validationRules      = [
         'nim_mahasiswa'       => 'required[mahasiswa.nim]',
         'kode_kelas_enrolled' => 'required[kelas.kode_kelas]',
-        'status_enrollment'   => 'required|in_list[aktif,selesai_lulus,selesai_gagal,mengundurkan_diri,menunggu_persetujuan]'
+        'status_enrollment'   => 'required|in_list[aktif,selesai_lulus,selesai_gagal,mengundurkan_diri,menunggu_persetujuan,dinonaktifkan]'
     ];
     protected $validationMessages   = [
         'nim_mahasiswa' => [
@@ -63,7 +63,8 @@ class EnrollmentModel extends Model
      */
     public function getMahasiswaByKelas(string $kodeKelas): array
     {
-        return $this->select('mahasiswa.nim, mahasiswa.nama, mahasiswa.email, enrollment.tanggal_enroll, enrollment.status_enrollment')
+        // PASTIKAN ANDA MENAMBAHKAN "enrollment.id_enrollment" DI BARIS INI
+        return $this->select('enrollment.id_enrollment, mahasiswa.nim, mahasiswa.nama, mahasiswa.email, enrollment.tanggal_enroll, enrollment.status_enrollment')
                     ->join('mahasiswa', 'mahasiswa.nim = enrollment.nim_mahasiswa')
                     ->where('enrollment.kode_kelas_enrolled', $kodeKelas)
                     ->orderBy('mahasiswa.nama', 'ASC')
@@ -83,4 +84,5 @@ class EnrollmentModel extends Model
                     ->where('kode_kelas_enrolled', $kodeKelas)
                     ->countAllResults() > 0;
     }
+
 }
