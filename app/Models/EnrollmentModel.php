@@ -17,7 +17,8 @@ class EnrollmentModel extends Model
         'nim_mahasiswa',
         'kode_kelas_enrolled',
         'tanggal_enroll',
-        'status_enrollment',
+        'status_enrollment'
+        // created_at and updated_at are handled by useTimestamps
     ];
 
     // Dates
@@ -26,19 +27,62 @@ class EnrollmentModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    // Validation (Tambahkan jika diperlukan, terutama untuk create/update enrollment)
+    // Validation
     protected $validationRules      = [
-        'nim_mahasiswa'       => 'required[mahasiswa.nim]',
-        'kode_kelas_enrolled' => 'required[kelas.kode_kelas]',
+        'nim_mahasiswa'       => 'required|exists[mahasiswa.nim]',
+        'kode_kelas_enrolled' => 'required|exists[kelas.kode_kelas]',
         'status_enrollment'   => 'required|in_list[aktif,selesai_lulus,selesai_gagal,mengundurkan_diri,menunggu_persetujuan]'
-        // Aturan is_unique untuk kombinasi nim_mahasiswa & kode_kelas_enrolled
-        // Sebaiknya ditambahkan dengan placeholder untuk update:
-        // 'nim_mahasiswa' => 'is_unique[enrollment.nim_mahasiswa,id_enrollment,{id_enrollment},kode_kelas_enrolled,{kode_kelas_enrolled}]'
-        // Tapi untuk countAllResults() tidak perlu validasi ini.
     ];
-    protected $validationMessages   = [];
+    protected $validationMessages   = [
+        'nim_mahasiswa' => [
+            'required' => 'Student NIM is required.',
+            'exists'   => 'The provided Student NIM does not exist.'
+        ],
+        'kode_kelas_enrolled' => [
+            'required' => 'Class Code is required.',
+            'exists'   => 'The provided Class Code does not exist.'
+        ]
+    ];
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
 
-    // Anda akan menambahkan fungsi lain di sini nanti, seperti getMahasiswaByKelas(), getKelasByMahasiswa(), dll.
+    // Callbacks
+    protected $allowCallbacks = true;
+    protected $beforeInsert   = [];
+    protected $afterInsert    = [];
+    protected $beforeUpdate   = [];
+    protected $afterUpdate    = [];
+    protected $beforeFind     = [];
+    protected $afterFind      = [];
+    protected $beforeDelete   = [];
+    protected $afterDelete    = [];
+
+    /**
+     * Get the students enrolled in a specific class.
+     *
+     * @param string $kodeKelas
+     * @return array
+     */
+    public function getMahasiswaByKelas(string $kodeKelas): array
+    {
+        return $this->select('mahasiswa.nim, mahasiswa.nama, mahasiswa.email, enrollment.tanggal_enroll, enrollment.status_enrollment')
+                    ->join('mahasiswa', 'mahasiswa.nim = enrollment.nim_mahasiswa')
+                    ->where('enrollment.kode_kelas_enrolled', $kodeKelas)
+                    ->orderBy('mahasiswa.nama', 'ASC')
+                    ->findAll();
+    }
+
+    /**
+     * Check if a student is already enrolled in a class.
+     *
+     * @param string $nimMahasiswa
+     * @param string $kodeKelas
+     * @return bool
+     */
+    public function isEnrolled(string $nimMahasiswa, string $kodeKelas): bool
+    {
+        return $this->where('nim_mahasiswa', $nimMahasiswa)
+                    ->where('kode_kelas_enrolled', $kodeKelas)
+                    ->countAllResults() > 0;
+    }
 }
