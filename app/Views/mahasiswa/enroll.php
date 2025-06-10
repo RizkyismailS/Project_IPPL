@@ -1,68 +1,92 @@
-<?= $this->extend('layout/main_template') ?>
+<?= $this->extend('layout/template') ?> {/* Make sure this matches your main layout file */}
+
 <?= $this->section('content') ?>
 
-<div class="container mt-4">
-    <div class="card shadow-sm p-4" style="border-radius: 15px;">
-        <h4 class="mb-4"><strong>Gabung ke kelas</strong></h4>
+<div class="page-heading">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-12 col-md-6 order-md-1 order-last">
+                <h3><?= esc($title ?? 'Enroll in Class') ?></h3>
+                <p class="text-subtitle text-muted">Enter the unique enrollment code to join a class.</p>
+            </div>
+            <div class="col-12 col-md-6 order-md-2 order-first">
+                <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="<?= base_url('mahasiswa/dashboard') ?>">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Enroll</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <!-- Info akun -->
-        <div class="border rounded mb-4 p-3 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-secondary" style="width: 45px; height: 45px;"></div>
-                <div>
-                    <div class="text-muted">Akun yang digunakan</div>
-                    <div class="fw-bold">Jhon doe</div>
-                    <small class="text-muted">Jhondoe234@gmail.com</small>
+<div class="page-content">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="mb-4 text-center"><strong>Join a Class</strong></h4>
+
+                    <?php if (session()->getFlashdata('success')): ?>
+                        <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
+                    <?php endif; ?>
+                    <?php if (session()->getFlashdata('error')): ?>
+                        <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
+                    <?php endif; ?>
+                    <?php if (session()->getFlashdata('warning')): ?>
+                        <div class="alert alert-warning"><?= session()->getFlashdata('warning') ?></div>
+                    <?php endif; ?>
+
+                    <div class="border rounded mb-4 p-3 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                <?= esc(strtoupper(substr($nama_user ?? 'U', 0, 1))) ?>
+                            </div>
+                            <div>
+                                <div class="text-muted small">Logged in as</div>
+                                <div class="fw-bold"><?= esc($nama_user ?? 'Student') ?></div>
+                                <small class="text-muted"><?= esc($email_user ?? 'student@example.com') ?></small>
+                            </div>
+                        </div>
+                        <a href="<?= base_url('logout') ?>" class="btn btn-outline-primary btn-sm">Switch Account</a>
+                    </div>
+
+                    <form action="<?= base_url('mahasiswa/enroll/process') ?>" method="post">
+                        <?= csrf_field() ?>
+                        
+                        <div class="border rounded mb-4 p-3">
+                            <label for="kode_enrollment" class="fw-bold mb-1">Class Code</label>
+                            <p class="text-muted small mb-2">Ask your lecturer for the class code, then enter it here.</p>
+                            <input type="text" 
+                                   class="form-control form-control-lg <?= (isset($errors['kode_enrollment'])) ? 'is-invalid' : '' ?>" 
+                                   id="kode_enrollment" 
+                                   name="kode_enrollment" 
+                                   placeholder="Class code" 
+                                   value="<?= old('kode_enrollment') ?>"
+                                   required>
+                            <?php if (isset($errors['kode_enrollment'])): ?>
+                                <div class="invalid-feedback"><?= esc($errors['kode_enrollment']) ?></div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Join</button>
+                        </div>
+                    </form>
+
+                    <div class="border rounded p-3 mt-4">
+                        <div class="fw-bold mb-2 small text-uppercase">Instructions</div>
+                        <ul class="mb-0 small text-muted ps-3">
+                            <li>Use the account authorized by your institution.</li>
+                            <li>Use a class code with 5-8 letters or numbers, with no spaces or symbols.</li>
+                        </ul>
+                    </div>
+
                 </div>
             </div>
-            <button class="btn btn-outline-primary">Ganti Akun</button>
-        </div>
-
-        <!-- Input kode kelas -->
-        <div class="border rounded mb-4 p-3">
-            <label for="kodeKelas" class="fw-bold mb-1">Kode kelas</label>
-            <p class="text-muted mb-2">Mintalah kode kelas kepada pengajar, dan masukan di sini.</p>
-            <input type="text" class="form-control" id="kodeKelas" placeholder="Kode kelas">
-        </div>
-
-        <!-- Petunjuk -->
-        <div class="border rounded p-3">
-            <div class="fw-bold mb-2">PETUNJUK</div>
-            <ul class="mb-0">
-                <li>Gunakan akun yang diberi otorisasi</li>
-                <li>Gunakan kode kelas yang terdiri dari 5–8 huruf atau angka, tanpa spasi atau simbol</li>
-            </ul>
         </div>
     </div>
 </div>
-        <!-- modal pop up kelas dan dosen -->
-<div class="modal fade" id="modalEnrolKelas" tabindex="-1" aria-labelledby="modalEnrolKelasLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content rounded-4 overflow-hidden">
-
-      <!-- Header Hijau -->
-      <div class="modal-header-green px-4 py-3">
-        <h5 class="mb-0">Manajemen Sistem Informasi</h5>
-        <small>A1 - IF</small>
-      </div>
-
-      <!-- Body Modal -->
-      <div class="modal-body px-5 py-4 d-flex flex-column align-items-center justify-content-center">
-        <div class="d-flex align-items-center w-100 mb-4" style="gap: 20px;">
-          <!-- Foto dosen di kiri mentok -->
-          <img src="/assets/images/faces/1.jpg" alt="Dosen" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-left: 0;">
-
-          <!-- Nama & tombol tetap proporsional -->
-          <div class="text-center flex-fill">
-            <h5 class="mb-3" style="font-size: 1.2rem;">prof. Dr. Paul Morrison S.Pd. M.Pd</h5>
-            <button class="btn btn-primary px-5 py-2" style="font-size: 1.1rem;">Enrol Kelas</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
 
 <?= $this->endSection() ?>

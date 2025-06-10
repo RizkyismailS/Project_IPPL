@@ -27,7 +27,7 @@ class MahasiswaAuthFilter implements FilterInterface
                 ]);
             }
             // For browser requests, redirect to the login page
-            return redirect()->to(base_url('login'))->with('error', 'You must log in to access this page.');
+            return redirect()->to(base_url('/'))->with('error', 'You must log in to access this page.');
         }
 
         // 2. Check if the user's role is 'mahasiswa'
@@ -47,7 +47,7 @@ class MahasiswaAuthFilter implements FilterInterface
                 return redirect()->to(base_url('dosen/dashboard'))->with('warning', 'You are not allowed to access the student area.');
             }
             // Fallback for unknown roles
-            return redirect()->to(base_url('login'))->with('error', 'Access denied. Invalid role.');
+            return redirect()->to(base_url('/'))->with('error', 'Access denied. Invalid role.');
         }
 
         log_message('info', '[MahasiswaAuthFilter] Access granted for mahasiswa. Target URL: ' . (string)current_url());

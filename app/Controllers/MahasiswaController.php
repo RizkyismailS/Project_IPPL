@@ -60,6 +60,84 @@ class MahasiswaController extends BaseController
         }
     }
 
-    // Fungsionalitas lain seperti enroll kelas, isi absensi akan ditambahkan di sini nanti
-    // saat Model terkait (EnrollmentModel, KehadiranModel, dll) sudah dibuat.
+    public function enrollForm()
+    {
+        $nim = $this->session->get('reference_id');
+        $mahasiswaData = $this->mahasiswaModel->find($nim);
+
+        $data['title'] = "Enroll in a New Class";
+        // Get user's full name from session, fallback to mahasiswa data, fallback to generic
+        $data['nama_user'] = $this->session->get('nama_lengkap') ?? ($mahasiswaData['nama'] ?? 'Student');
+        // Get user's email from mahasiswa data
+        $data['email_user'] = $mahasiswaData['email'] ?? ''; 
+        $data['errors'] = session()->getFlashdata('errors');
+
+        return view('mahasiswa/enroll', $data);
+    }
+
+    public function processEnrollment()
+    {
+        $nimMahasiswa = $this->session->get('reference_id');
+        if (empty($nimMahasiswa)) {
+            log_message('error', '[MahasiswaController] NIM not found in session during enrollment process.');
+            return redirect()->to(base_url('login'))->with('error', 'Your session is invalid. Please log in again.');
+        }
+
+        $validation = $this->validate([
+            'kode_enrollment' => [
+                'label'  => 'Enrollment Code',
+                'rules'  => 'required|alpha_numeric|max_length[20]',
+                'errors' => [
+                    'required' => '{field} is required.',
+                ],
+            ],
+        ]);
+
+        if (!$validation) {
+            return redirect()->to(base_url('mahasiswa/enroll'))
+                             ->withInput()
+                             ->with('errors', $this->validator->getErrors());
+        }
+
+        $kodeEnrollment = $this->request->getVar('kode_enrollment');
+
+        $kelas = $this->kelasModel->findByKodeEnrollment($kodeEnrollment);
+
+        if (!$kelas) {
+            return redirect()->to(base_url('mahasiswa/enroll'))
+                             ->withInput()
+                             ->with('error', 'Invalid Enrollment Code. The class was not found.');
+        }
+
+        $kodeKelas = $kelas['kode_kelas'];
+
+        if ($this->enrollmentModel->isEnrolled($nimMahasiswa, $kodeKelas)) {
+            return redirect()->to(base_url('mahasiswa/enroll'))
+                             ->with('warning', 'You are already enrolled in class "' . esc($kelas['nama_kelas']) . '".');
+        }
+
+        $enrollmentData = [
+            'nim_mahasiswa'       => $nimMahasiswa,
+            'kode_kelas_enrolled' => $kodeKelas,
+            'status_enrollment'   => 'aktif', 
+        ];
+
+        try {
+            if ($this->enrollmentModel->insert($enrollmentData)) {
+                log_message('info', "Student NIM '{$nimMahasiswa}' successfully enrolled in class '{$kodeKelas}'.");
+                return redirect()->to(base_url('mahasiswa/dashboard')) 
+                                 ->with('success', 'You have successfully enrolled in class "' . esc($kelas['nama_kelas']) . '"!');
+            } else {
+                log_message('error', '[MahasiswaController] EnrollmentModel insert failed. Errors: ' . json_encode($this->enrollmentModel->errors()));
+                return redirect()->to(base_url('mahasiswa/enroll'))
+                                 ->withInput()
+                                 ->with('error', 'Failed to enroll in the class due to a validation error.');
+            }
+        } catch (DatabaseException $e) {
+            log_message('error', '[MahasiswaController] DatabaseException during enrollment: ' . $e->getMessage());
+            return redirect()->to(base_url('mahasiswa/enroll'))
+                             ->withInput()
+                             ->with('error', 'A database error occurred. Please try again later.');
+        }
+    }
 }

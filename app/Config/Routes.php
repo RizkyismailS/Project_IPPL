@@ -47,4 +47,6 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
 $routes->group('mahasiswa', ['filter' => 'mahasiswaAuthFilter'], static function ($routes) { // Buat filter mahasiswaAuthFilter
     $routes->get('profile', 'MahasiswaController::profile');
     $routes->get('dashboard', 'MahasiswaController::dashboard');
+    $routes->get('enroll', 'MahasiswaController::enrollForm');
+    $routes->post('enroll/process', 'MahasiswaController::processEnrollment');
 });
