@@ -3,16 +3,23 @@
 namespace App\Controllers;
 
 use App\Models\MahasiswaModel; // Kita sudah punya ini
+use App\Models\EnrollmentModel; // Model untuk enrollment
+use App\Models\KelasModel; // Model untuk kelas
+use App\Libraries\RuleExist; // Pastikan RuleExist sudah ada
 // Mungkin perlu model lain seperti EnrollmentModel, KelasModel, SesiAbsensiModel, KehadiranModel
 
 class MahasiswaController extends BaseController
 {
     protected $mahasiswaModel;
     protected $session;
+    protected $enrollmentModel;
+    protected $kelasModel; // Tambahkan model kelas jika diperlukan
 
     public function __construct()
     {
         $this->mahasiswaModel = new MahasiswaModel();
+        $this->enrollmentModel = new EnrollmentModel();
+        $this->kelasModel = new KelasModel(); // Pastikan model kelas sudah ada
         $this->session = \Config\Services::session();
         helper(['url']);
 

@@ -29,18 +29,16 @@ class EnrollmentModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'nim_mahasiswa'       => 'required|exists[mahasiswa.nim]',
-        'kode_kelas_enrolled' => 'required|exists[kelas.kode_kelas]',
+        'nim_mahasiswa'       => 'required[mahasiswa.nim]',
+        'kode_kelas_enrolled' => 'required[kelas.kode_kelas]',
         'status_enrollment'   => 'required|in_list[aktif,selesai_lulus,selesai_gagal,mengundurkan_diri,menunggu_persetujuan]'
     ];
     protected $validationMessages   = [
         'nim_mahasiswa' => [
             'required' => 'Student NIM is required.',
-            'exists'   => 'The provided Student NIM does not exist.'
         ],
         'kode_kelas_enrolled' => [
             'required' => 'Class Code is required.',
-            'exists'   => 'The provided Class Code does not exist.'
         ]
     ];
     protected $skipValidation       = false;
