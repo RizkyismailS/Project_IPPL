@@ -145,7 +145,7 @@
             </form>
             
             <div class="register-footer mt-4">
-                <p>Sudah punya akun? <a href="<?= base_url('login') ?>">Login disini</a></p>
+                <p>Sudah punya akun? <a href="<?= base_url('/') ?>">Login disini</a></p>
             </div>
         </div>
     </div>
