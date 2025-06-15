@@ -77,4 +77,36 @@ class SesiAbsensiModel extends Model
             )")
             ->first();
     }
+
+    /**
+     * Mengambil data laporan kehadiran lengkap untuk satu sesi.
+     * Menggabungkan data mahasiswa yang terdaftar dengan status kehadiran mereka.
+     * Jika mahasiswa tidak memiliki record kehadiran, statusnya dianggap 'Alpa'.
+     *
+     * @param int $id_sesi ID dari sesi absensi
+     * @return array Data laporan kehadiran
+     */
+    public function getLaporanKehadiran(int $id_sesi): array
+    {
+        // 1. Dapatkan dulu kode kelas dari id_sesi yang diberikan
+        $sesi = $this->find($id_sesi);
+        if (!$sesi) {
+            return []; // Kembalikan array kosong jika sesi tidak ditemukan
+        }
+        $kode_kelas = $sesi['kode_kelas'];
+
+        // 2. Buat query utama menggunakan Query Builder
+        $builder = $this->db->table('enrollment');
+        
+        $builder->select('mahasiswa.nim, mahasiswa.nama, IFNULL(kehadiran.status_absen, "Alpa") as status_kehadiran');
+        $builder->join('mahasiswa', 'mahasiswa.nim = enrollment.nim_mahasiswa');
+        
+        // LEFT JOIN ke tabel kehadiran dengan DUA kondisi
+        $builder->join('kehadiran', 'kehadiran.nim = enrollment.nim_mahasiswa AND kehadiran.id_sesi = ' . $this->db->escape($id_sesi), 'left');
+        
+        $builder->where('enrollment.kode_kelas_enrolled', $kode_kelas);
+        $builder->orderBy('mahasiswa.nim', 'ASC');
+
+        return $builder->get()->getResultArray();
+    }
 }

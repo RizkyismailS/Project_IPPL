@@ -209,6 +209,48 @@ class DosenController extends BaseController
         return view('dosen/listkelas', $data);
     }
 
+    /**
+     * Menampilkan daftar sesi absensi untuk sebuah kelas yang spesifik.
+     *
+     * @param string $kode_kelas Kode unik dari kelas yang didapat dari URL.
+     */
+    public function listSesi(string $kode_kelas)
+    {
+        // Inisialisasi model yang kita butuhkan
+        $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
+        $kelasModel = new \App\Models\KelasModel();
+
+        // --- Langkah Keamanan (Penting) ---
+        // 1. Dapatkan NIP dosen yang sedang login dari session
+        $nip_dosen = session()->get('reference_id');
+
+        // 2. Ambil data kelas dari database berdasarkan kode_kelas dari URL
+        $kelas = $kelasModel->find($kode_kelas);
+
+        // 3. Pastikan kelas ada dan dosen yang login adalah pemilik kelas tersebut
+        if (!$kelas || $kelas['dosen_nip'] != $nip_dosen) {
+            // Jika tidak, kembalikan ke halaman sebelumnya dengan pesan error
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke kelas ini.');
+        }
+        
+        // Ambil semua sesi absensi yang berelasi dengan kode_kelas ini
+        // Urutkan dari yang terbaru berdasarkan tanggal sesi
+        $sesi_data = $sesiAbsensiModel
+                        ->where('kode_kelas', $kode_kelas)
+                        ->orderBy('tanggal_sesi', 'DESC')
+                        ->findAll();
+        
+        // Siapkan data untuk dikirim ke view
+        $data = [
+            'title'    => 'List Sesi Absensi',
+            'Absensi'  => $sesi_data, // Nama variabel disesuaikan dengan view Anda ($Absensi)
+            'kelas'    => $kelas,     // Kirim juga data kelas untuk info tambahan jika perlu
+        ];
+
+        // Muat view 'dosen/listAbsensi' dan kirimkan datanya
+        return view('dosen/listAbsensi', $data);
+    }
+
     public function createKelasForm()
     {
         $data['title'] = "Buat Kelas Baru";
@@ -922,5 +964,32 @@ class DosenController extends BaseController
         return $this->request->isAJAX() ||
                strpos($this->request->getHeaderLine('Accept'), 'application/json') !== false ||
                $this->request->getHeaderLine('Content-Type') === 'application/json';
+    }
+
+    public function laporanSesi($id_sesi)
+    {
+        // Inisialisasi model yang dibutuhkan
+        $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
+        
+        // Ambil info detail sesi untuk ditampilkan di judul halaman
+        $sesi = $sesiAbsensiModel->find($id_sesi);
+
+        // Pengaman: Jika sesi tidak ditemukan, tampilkan error
+        if (!$sesi) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        // Ambil data laporan dari metode yang baru kita buat
+        $laporan = $sesiAbsensiModel->getLaporanKehadiran($id_sesi);
+        
+        // Kirim data sesi dan data laporan ke view
+        $data = [
+            'title'   => 'Laporan Kehadiran',
+            'sesi'    => $sesi,
+            'laporan' => $laporan
+        ];
+
+        // Memuat view baru yang akan kita buat selanjutnya
+        return view('dosen/laporan_sesi', $data);
     }
 }

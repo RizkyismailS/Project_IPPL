@@ -35,8 +35,11 @@
                             <td><?= esc($k['jumlah_mahasiswa']) ?></td>
                             <td><?= esc($k['semester']) ?>,<?= esc($k['tahun']) ?></td>
                             <td><span class="badge bg-success">Aktif</span></td>
-                            <td>    
+                            <td class="text-nowrap">    
                                 <a href="<?= base_url('dosen/kelas/detail/' . $k['kode_kelas']) ?>" class="btn btn-info btn-sm">Detail Kelas</a>
+                                <a href="/dosen/list-sesi/<?= esc($k['kode_kelas']) ?>" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-card-list"></i> Sesi
+                                </a>
                                 <form action="<?= base_url('dosen/kelas/delete/' . $k['kode_kelas']) ?>" method="post" style="display:inline">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="_method" value="DELETE">

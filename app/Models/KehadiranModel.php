@@ -83,4 +83,6 @@ class KehadiranModel extends Model
             ->get()
             ->getResultArray();
     }
+
+    
 }

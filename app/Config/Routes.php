@@ -44,8 +44,10 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
     $routes->post('enrollment/manage', 'DosenController::manageEnrollment'); // Untuk mengelola enrollment mahasiswa
     $routes->get('sesi-absensi/create/(:segment)', 'SesiAbsensiController::create/$1');
     $routes->post('sesi-absensi/store', 'SesiAbsensiController::store');
-     $routes->get('sesi-absensi/edit/(:num)', 'SesiAbsensiController::edit/$1');
+    $routes->get('sesi-absensi/edit/(:num)', 'SesiAbsensiController::edit/$1');
     $routes->post('sesi-absensi/update/(:num)', 'SesiAbsensiController::update/$1');
+    $routes->get('list-sesi/(:segment)', 'DosenController::listSesi/$1');
+    $routes->get('laporan-sesi/(:num)', 'DosenController::laporanSesi/$1');
 });
 
 // Mahasiswa Routes (Gunakan grup dengan filter)
