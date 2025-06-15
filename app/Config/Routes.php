@@ -58,4 +58,5 @@ $routes->group('mahasiswa', ['filter' => 'mahasiswaAuthFilter'], static function
     $routes->post('absensi/submit', 'MahasiswaController::submitAbsensi');
     $routes->get('enroll', 'MahasiswaController::enrollForm');
     $routes->post('enroll/process', 'MahasiswaController::processEnrollment');
+    $routes->get('kelas', 'MahasiswaController::listKelas');
 });

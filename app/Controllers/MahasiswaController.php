@@ -173,57 +173,78 @@ class MahasiswaController extends BaseController
     }
 
     /**
-     * Memproses submit absensi dari mahasiswa.
+     * Memproses data saat mahasiswa menekan tombol absen.
      */
     public function submitAbsensi()
     {
-        // Hanya bisa diakses via POST
-        if ($this->request->getMethod() !== 'post') {
-            return redirect()->back();
-        }
+        // 1. Inisialisasi Model dan Helper yang dibutuhkan
+        $kehadiranModel = new \App\Models\KehadiranModel();
+        helper('date'); // Memuat helper untuk fungsi now()
 
-        // Inisialisasi model
-        $kehadiranModel = new KehadiranModel();
-        $sesiAbsensiModel = new SesiAbsensiModel();
-
-        // Ambil data dari form dan session
+        // 2. Validasi input dari form
         $id_sesi = $this->request->getPost('id_sesi');
-        $nim_mahasiswa = session()->get('reference_id');
-
-        // --- Lakukan serangkaian validasi dan security check ---
-
-        // 1. Cek apakah sesi ada dan valid
-        $sesi = $sesiAbsensiModel->find($id_sesi);
-        if (!$sesi) {
-            return redirect()->back()->with('error', 'Sesi absensi tidak valid.');
+        if (empty($id_sesi)) {
+            // Jika tidak ada id_sesi, kembalikan dengan pesan error
+            return redirect()->back()->with('error', 'Sesi absensi tidak valid atau tidak ditemukan.');
         }
 
-        // 2. Cek apakah sesi sedang berlangsung
-        $now = new \CodeIgniter\I18n\Time('now', 'Asia/Jakarta');
-        $start = new \CodeIgniter\I18n\Time($sesi['waktu_mulai_aktual']);
-        $end = new \CodeIgniter\I18n\Time($sesi['waktu_selesai_aktual']);
-
-        if (!$now->isBetween($start, $end)) {
-            return redirect()->back()->with('error', 'Waktu absensi untuk sesi ini sudah berakhir atau belum dimulai.');
+        // 3. Ambil data NIM mahasiswa dari session
+        $nim = session()->get('reference_id');
+        if (empty($nim)) {
+            // Jika tidak ada nim di session, paksa login ulang
+            return redirect()->to('/login')->with('error', 'Sesi Anda tidak valid, silakan login kembali.');
         }
 
-        // 3. Cek apakah mahasiswa sudah absen sebelumnya di sesi ini
-        if ($kehadiranModel->sudahAbsen($id_sesi, $nim_mahasiswa)) {
-             return redirect()->back()->with('error', 'Anda sudah melakukan absensi untuk sesi ini.');
+        // 4. Langkah Keamanan: Cek apakah mahasiswa sudah pernah absen untuk sesi ini
+        $cekSudahAbsen = $kehadiranModel->where('nim', $nim)
+                                       ->where('id_sesi', $id_sesi)
+                                       ->first();
+
+        if ($cekSudahAbsen) {
+            // Jika data sudah ada, jangan proses dan beri pesan
+            return redirect()->to('/mahasiswa/dashboard')->with('error', 'Anda sudah melakukan absensi untuk sesi ini.');
         }
-        
-        // --- Jika semua validasi lolos, simpan data ---
+
+        // 5. Siapkan data untuk dimasukkan ke tabel `kehadiran`
+        // Pastikan nama kolom sesuai dengan skema database Anda
         $dataToSave = [
-            'id_sesi' => $id_sesi,
-            'nim_mahasiswa' => $nim_mahasiswa,
-            'waktu_absensi' => $now->toDateTimeString(),
-            'status_kehadiran' => 'hadir', // Status default
+            'nim'           => $nim,
+            'id_sesi'       => $id_sesi,
+            'status_absen'  => 'hadir', // Saat mahasiswa klik tombol, statusnya otomatis 'hadir'
+            'waktu_absen'   => now('Asia/Jakarta'), // Mengambil waktu saat ini (WIB)
         ];
 
+        // 6. Simpan data dan berikan feedback
         if ($kehadiranModel->save($dataToSave)) {
-            return redirect()->back()->with('success', 'Kehadiran berhasil dicatat!');
+            // Jika penyimpanan berhasil
+            return redirect()->to('/mahasiswa/dashboard')->with('success', 'Kehadiran Anda berhasil dicatat!');
         } else {
-            return redirect()->back()->with('error', 'Terjadi kesalahan. Gagal mencatat kehadiran.');
+            // Jika penyimpanan gagal karena alasan lain
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
         }
+    }
+
+    /**
+     * Menampilkan halaman "Kelas Saya" yang berisi daftar
+     * semua kelas yang telah di-enroll oleh mahasiswa.
+     */
+    public function listKelas()
+    {
+        // Inisialisasi model
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+
+        // Ambil NIM dari session
+        $nim = session()->get('reference_id');
+
+        // Ambil data kelas dari metode yang baru kita buat di EnrollmentModel
+        $enrolledClasses = $enrollmentModel->getEnrolledClassesByNim($nim);
+
+        $data = [
+            'title' => 'Kelas Saya',
+            'kelas' => $enrolledClasses,
+        ];
+
+        // Memuat view baru yang akan kita buat sekarang
+        return view('mahasiswa/list_kelas', $data);
     }
 }

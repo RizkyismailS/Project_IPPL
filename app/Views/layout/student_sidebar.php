@@ -28,6 +28,13 @@
                     </a>
                 </li>
 
+                <li class="sidebar-item <?= (strpos(uri_string(), 'mahasiswa/kelas') !== false) ? 'active' : '' ?>">
+                    <a href="/mahasiswa/kelas" class='sidebar-link'>
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                        <span>Kelas Saya</span>
+                    </a>
+                </li>
+
                 <li class="sidebar-item">
                     <a href="/mahasiswa/enroll" class="sidebar-link">
                         <i class="bi bi-person-fill"></i>

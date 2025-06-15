@@ -102,4 +102,30 @@ class EnrollmentModel extends Model
                     ->countAllResults() > 0;
     }
 
+    /**
+     * Mengambil semua data kelas yang diikuti oleh seorang mahasiswa
+     * beserta detail mata kuliah dan dosen pengampu.
+     *
+     * @param string $nim NIM mahasiswa
+     * @return array Daftar kelas yang diikuti
+     */
+    public function getEnrolledClassesByNim(string $nim): array
+    {
+        // Menggunakan Query Builder untuk melakukan JOIN ke beberapa tabel
+        $builder = $this->db->table($this->table . ' as e'); // 'e' adalah alias untuk enrollment
+        
+        $builder->select('k.*, mk.nama_matakuliah, d.nama as nama_dosen');
+        $builder->join('kelas as k', 'k.kode_kelas = e.kode_kelas_enrolled');
+        $builder->join('matakuliah as mk', 'mk.kode_matakuliah = k.kode_matakuliah');
+        $builder->join('dosen as d', 'd.nip = k.dosen_nip');
+        
+        // Filter berdasarkan NIM mahasiswa dan status enrollment yang aktif
+        $builder->where('e.nim_mahasiswa', $nim);
+        $builder->where('e.status_enrollment', 'aktif');
+        
+        $builder->orderBy('k.nama_kelas', 'ASC');
+
+        return $builder->get()->getResultArray();
+    }
+
 }
