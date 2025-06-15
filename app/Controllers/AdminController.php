@@ -4,18 +4,28 @@ namespace App\Controllers;
 
 use App\Models\DosenModel;
 use App\Models\UserModel;
-use CodeIgniter\Database\Exceptions\DatabaseException; 
+use App\Models\MahasiswaModel;
+use App\Models\KelasModel;
+use App\Models\SesiAbsensiModel;
+use CodeIgniter\Database\Exceptions\DatabaseException;
+use DateTime; 
 
 class AdminController extends BaseController
 {
     protected $dosenModel;
     protected $userModel;
+    protected $mahasiswaModel;
+    protected $kelasModel;
+    protected $sesiModel;
     protected $session;
 
     public function __construct()
     {
         $this->dosenModel = new DosenModel();
         $this->userModel = new UserModel();
+        $this->mahasiswaModel = new MahasiswaModel();
+        $this->kelasModel = new KelasModel();
+        $this->sesiModel = new SesiAbsensiModel();
         $this->session = \Config\Services::session();
         helper(['form', 'url']);
 
@@ -34,13 +44,34 @@ class AdminController extends BaseController
             // Untuk Postman, bisa kembalikan 403 jika tidak pakai redirect
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak. Hanya admin.']);
         }
+        $var = $this->dosenModel->countAll();
         
+        
+        $data = [
+            'total_dosen' => $this->dosenModel->countAll(),
+            'total_mahasiswa' => $this->mahasiswaModel->countAll(),
+            'total_kelas_aktif' => $this->kelasModel->countAllResults(),
+            'total_sesi_aktif' => $this->sesiModel->where('status', value: 'aktif')->countAllResults(),
+        ];
         $data['title'] = 'Admin Dashboard';
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
-        
-        return view('admin/dashboard', $data);
 
-        return $this->response->setJSON($data);
+        $data['aktifitas_sesi'] = $this->sesiModel->where('status', 'aktif')
+            ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
+            ->select('nama_kelas, waktu_mulai_kelas, waktu_selesai_kelas')
+            ->findAll();
+        
+        // Hitung waktu tersisa untuk setiap sesi
+        foreach ($data['aktifitas_sesi'] as &$sesi) {
+            $waktuSelesai = $sesi['waktu_selesai_kelas'];
+            $waktuSekarang = new DateTime();
+            $jam = $waktuSekarang->format('H');
+            $menit = $waktuSekarang->format('i');
+            $waktuMulai = new DateTime($sesi['waktu_mulai_kelas']);
+            $sesi['hitung_waktu'] = date_add($waktuMulai, date_interval_create_from_date_string($menit. ' minutes'));
+        }
+
+        return view('admin/dashboard', $data);
     }
 
     public function createUserDosenForm()
@@ -477,14 +508,10 @@ class AdminController extends BaseController
                 }
 
 
-                if ($wantsJson) {
-                    return $this->response->setStatusCode(400)->setJSON([
-                        'status' => 'error',
-                        'message' => $message
-                    ]);
-                }
+               
                 return redirect()->to(base_url('admin/dosen/list'))
                                  ->with('error', $message);
+
             } else {
                 $db->transCommit();
                 log_message('info', '[AdminController] Data dosen dan akun terkait (jika ada) untuk NIP: ' . $nip . ' berhasil dihapus.');
