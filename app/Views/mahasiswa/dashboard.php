@@ -1,64 +1,138 @@
 <?= $this->extend('layout/template'); ?>
+
 <?= $this->section('content'); ?>
-
-<div class="container-fluid">
-  <div class="card shadow-sm border-0">
-    <div class="card-body">
-
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Jhon Doe - 411550502100xx</h4>
-        <a href="#" class="btn btn-dark">Enrol Kelas</a>
-      </div>
-
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <div class="p-4 rounded bg-navy text-white text-center"> 
-            <h5 class="mb-2 text-success">Jumlah Kehadiran</h5>
-            <h1 class="text-success">00</h1>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="p-4 rounded bg-navy text-white text-center"> 
-            <h5 class="mb-2 text-danger">Jumlah Tidak Hadir</h5>
-            <h1 class="text-danger">00</h1>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded p-4 shadow-sm">
-        <h5 class="mb-3"><strong>Aktivitas Kehadiran</strong></h5>
-        <table class="table table-borderless">
-          <tbody>
-            <tr>
-              <td>Manajemen Sistem Informasi A1 12:00 - 02 Mei 2025</td>
-              <td class="text-success text-end">Hadir</td>
-            </tr>
-            <tr>
-              <td>Jaringan Komputer A1 8:00 - 03 Mei 2025</td>
-              <td class="text-success text-end">Hadir</td>
-            </tr>
-            <tr>
-              <td>Praktikum KBPL A1 10:30 - 03 Mei 2025</td>
-              <td class="text-success text-end">Hadir</td>
-            </tr>
-            <tr>
-              <td>Sistem Terdistribusi A1 14:30 - 04 Mei 2025</td>
-              <td class="text-danger text-end">Tidak Hadir</td>
-            </tr>
-            <tr>
-              <td>Pengantar Rekayasa Perangkat Lunak 13:30 - 05 Mei 2025</td>
-              <td class="text-success text-end">Hadir</td>
-            </tr>
-            <tr>
-              <td>Manajemen Sistem Informasi 12:00 - 24 April 2025</td>
-              <td class="text-danger text-end">Tidak Hadir</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-  </div>
+<div class="page-heading">
+    <h3>Dashboard</h3>
 </div>
+<div class="page-content">
+    <section class="row">
 
-<?= $this->endSection() ?>
+        <div class="col-12 col-lg-9">
+
+            <?php if (session()->getFlashdata('success')) : ?>
+                <div class="alert alert-success" role="alert">
+                    <?= session()->getFlashdata('success') ?>
+                </div>
+            <?php endif; ?>
+            <?php if (session()->getFlashdata('error')) : ?>
+                <div class="alert alert-danger" role="alert">
+                    <?= session()->getFlashdata('error') ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="card">
+                <div class="card-body py-4 px-4">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-xl">
+                            <img src="/assets/images/faces/1.jpg" alt="Face 1">
+                        </div>
+                        <div class="ms-3 name">
+                            <h5 class="font-bold">Selamat Datang, <?= esc($mahasiswa['nama']) ?>!</h5>
+                            <h6 class="text-muted mb-0">NIM: <?= esc($mahasiswa['nim']) ?></h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (!empty($activeSession)) : ?>
+            <div class="card border-primary shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0"><i class="bi bi-broadcast"></i> Sesi Absensi Sedang Berlangsung!</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title"><?= esc($activeSession['nama_kelas']) ?></h5>
+                    <p class="mb-1"><strong>Mata Kuliah:</strong> <?= esc($activeSession['nama_matakuliah']) ?></p>
+                    <p class="mb-3"><strong>Topik Hari Ini:</strong> <?= esc($activeSession['topik_perkuliahan']) ?></p>
+                    <form action="<?= base_url('mahasiswa/submitAbsensi') ?>" method="post" class="mt-3">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id_sesi" value="<?= $activeSession['id_sesi'] ?>">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Lakukan Absensi Sekarang
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4>Riwayat Aktivitas Kehadiran</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-lg">
+                            <thead>
+                                <tr>
+                                    <th>Kelas</th>
+                                    <th>Topik</th>
+                                    <th>Waktu Absen</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($history)) : ?>
+                                    <?php foreach ($history as $item) : ?>
+                                        <tr>
+                                            <td class="text-bold-500"><?= esc($item['nama_kelas']) ?></td>
+                                            <td><?= esc($item['topik_perkuliahan']) ?></td>
+                                            <td class="text-bold-500"><?= $item['waktu_absen'] ? date('d M Y, H:i', strtotime($item['waktu_absen'])) : '-' ?></td>
+                                            <td>
+                                                <?php if ($item['status_absen'] == 'hadir') : ?>
+                                                    <span class="badge bg-success">Hadir</span>
+                                                <?php elseif ($item['status_absen'] == 'sakit') : ?>
+                                                    <span class="badge bg-warning">Sakit</span>
+                                                <?php elseif ($item['status_absen'] == 'izin') : ?>
+                                                    <span class="badge bg-info">Izin</span>
+                                                <?php else : ?>
+                                                    <span class="badge bg-danger">Alpa</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <tr>
+                                        <td colspan="4" class="text-center">Belum ada riwayat kehadiran.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-12 col-lg-3">
+             <div class="card">
+                <div class="card-header">
+                    <h4>Statistik</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-9">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                <h5 class="mb-0 ms-3">Hadir</h5>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="mb-0 text-end"><?= esc($stats['hadir']) ?></h5>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-9">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                                <h5 class="mb-0 ms-3">Absen</h5>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="mb-0 text-end"><?= esc($stats['tidak_hadir']) ?></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<?= $this->endSection(); ?>

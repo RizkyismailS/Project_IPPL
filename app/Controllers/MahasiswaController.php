@@ -6,6 +6,8 @@ use App\Models\MahasiswaModel; // Kita sudah punya ini
 use App\Models\EnrollmentModel; // Model untuk enrollment
 use App\Models\KelasModel; // Model untuk kelas
 use App\Libraries\RuleExist; // Pastikan RuleExist sudah ada
+use App\Models\SesiAbsensiModel; // Model untuk sesi absensi
+use App\Models\KehadiranModel; // Model untuk kehadiran
 // Mungkin perlu model lain seperti EnrollmentModel, KelasModel, SesiAbsensiModel, KehadiranModel
 
 class MahasiswaController extends BaseController
@@ -14,12 +16,16 @@ class MahasiswaController extends BaseController
     protected $session;
     protected $enrollmentModel;
     protected $kelasModel; // Tambahkan model kelas jika diperlukan
+    protected $sesiAbsensiModel;
+    protected $kehadiranModel; // Model untuk kehadiran
 
     public function __construct()
     {
         $this->mahasiswaModel = new MahasiswaModel();
         $this->enrollmentModel = new EnrollmentModel();
         $this->kelasModel = new KelasModel(); // Pastikan model kelas sudah ada
+        $this->sesiAbsensiModel = new SesiAbsensiModel(); // Model untuk sesi absensi
+        $this->kehadiranModel = new KehadiranModel(); // Model untuk kehadiran
         $this->session = \Config\Services::session();
         helper(['url']);
 
@@ -33,22 +39,40 @@ class MahasiswaController extends BaseController
 
     public function dashboard()
     {
-        log_message('critical', 'MAHASISWA_CONTROLLER: Masuk MahasiswaController::dashboard. Sesi: ' . json_encode($this->session->get()));
-        // Cek sesi mahasiswa
-        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'mahasiswa') {
-            return redirect()->to(base_url('/'))->with('error', 'Silakan login terlebih dahulu');
+        // Inisialisasi semua model
+        $mahasiswaModel = new MahasiswaModel();
+        $sesiAbsensiModel = new SesiAbsensiModel();
+        $kehadiranModel = new KehadiranModel();
+        
+        // Ambil NIM dari session
+        $nim_mahasiswa = session()->get('reference_id');
+
+        if (!$nim_mahasiswa) {
+            return redirect()->to('/login')->with('error', 'Sesi Anda telah berakhir, silakan login kembali.');
         }
-        $nimMahasiswa = $this->session->get('reference_id');
-        $mahasiswaInfo = $this->mahasiswaModel->find($nimMahasiswa);
 
-        $data['title'] = 'Mahasiswa Dashboard';
-        $data['mahasiswa'] = $mahasiswaInfo;
-        $data['nama_user'] = $this->session->get('nama_lengkap');
+        // Ambil data profil mahasiswa menggunakan find() karena nim adalah Primary Key
+        $mahasiswa = $mahasiswaModel->find($nim_mahasiswa);
 
+        if (!$mahasiswa) {
+            return redirect()->to('/logout')->with('error', 'Profil mahasiswa tidak ditemukan.');
+        }
+
+        // --- Mengumpulkan Semua Data untuk Dasbor ---
+        $activeSession = $sesiAbsensiModel->findActiveSessionForMahasiswa($nim_mahasiswa);
+        $stats = $kehadiranModel->getAttendanceStats($nim_mahasiswa);
+        $history = $kehadiranModel->getAttendanceHistory($nim_mahasiswa, 5);
+
+        // Kumpulkan semua data untuk dikirim ke view
+        $data = [
+            'title'         => 'Dashboard Mahasiswa',
+            'mahasiswa'     => $mahasiswa,
+            'activeSession' => $activeSession,
+            'stats'         => $stats,
+            'history'       => $history,
+        ];
 
         return view('mahasiswa/dashboard', $data);
-        // Untuk tes backend:
-        return $this->response->setJSON($data);
     }
 
     // Contoh: Menampilkan profil mahasiswa yang sedang login
