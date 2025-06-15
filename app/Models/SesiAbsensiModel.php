@@ -42,5 +42,19 @@ class SesiAbsensiModel extends Model
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
 
-    // Anda akan menambahkan fungsi lain di sini nanti, seperti getSesiByKelas(), findByToken(), dll.
+    /**
+     * Mengambil semua sesi absensi untuk sebuah kelas tertentu.
+     * Diurutkan berdasarkan tanggal sesi.
+     *
+     * @param string $kodeKelas
+     * @return array
+     */
+    public function getSesiByKelas(string $kodeKelas): array
+    {
+        // UBAH orderBy KE 'tanggal_sesi'
+        return $this->where('kode_kelas', $kodeKelas)
+                    ->orderBy('tanggal_sesi', 'ASC')
+                    ->orderBy('waktu_mulai_aktual', 'ASC')
+                    ->findAll();
+    }
 }

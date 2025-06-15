@@ -1,5 +1,5 @@
 <!-- absen_kelas.php -->
-<?= $this->extend('layout/main_template') ?>
+<?= $this->extend('layout/template') ?>
 <?= $this->section('content') ?>
 
 <div class="page-content">

@@ -42,12 +42,17 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
     $routes->put('kelas/update/(:segment)', 'DosenController::updateKelas/$1'); // Untuk proses update kelas
     $routes->delete('kelas/delete/(:segment)', 'DosenController::deleteKelas/$1'); // Untuk hapus kelas
     $routes->post('enrollment/manage', 'DosenController::manageEnrollment'); // Untuk mengelola enrollment mahasiswa
+    $routes->get('sesi-absensi/create/(:segment)', 'SesiAbsensiController::create/$1');
+    $routes->post('sesi-absensi/store', 'SesiAbsensiController::store');
+     $routes->get('sesi-absensi/edit/(:num)', 'SesiAbsensiController::edit/$1');
+    $routes->post('sesi-absensi/update/(:num)', 'SesiAbsensiController::update/$1');
 });
 
 // Mahasiswa Routes (Gunakan grup dengan filter)
 $routes->group('mahasiswa', ['filter' => 'mahasiswaAuthFilter'], static function ($routes) { // Buat filter mahasiswaAuthFilter
     $routes->get('profile', 'MahasiswaController::profile');
     $routes->get('dashboard', 'MahasiswaController::dashboard');
+    $routes->post('absensi/submit', 'MahasiswaController::submitAbsensi');
     $routes->get('enroll', 'MahasiswaController::enrollForm');
     $routes->post('enroll/process', 'MahasiswaController::processEnrollment');
 });

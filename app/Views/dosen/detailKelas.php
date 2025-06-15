@@ -114,10 +114,55 @@ echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
                 <hr>
                 
                 <h5>Sesi Absensi</h5>
-                <a href="#" class="btn btn-outline-success btn-sm mb-3">
+                <a href="<?= base_url('dosen/sesi-absensi/create/' . esc($kelas['kode_kelas'], 'url')) ?>" class="btn btn-outline-success btn-sm mb-3">
                     <i class="bi bi-plus-lg"></i> Tambah Sesi Absensi Baru
                 </a>
-                <p class="text-muted">Belum ada sesi absensi yang dibuat untuk kelas ini.</p>
+
+                <?php if (!empty($sesi_absensi_list) && is_array($sesi_absensi_list)): ?>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Topik Perkuliahan</th>
+                                    <th>Absen Dibuka</th>
+                                    <th>Absen Ditutup</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($sesi_absensi_list as $sesi): ?>
+                                    <tr>
+                                        <td><?= esc($sesi['topik_perkuliahan']) ?></td>
+                                        <td><?= esc(CodeIgniter\I18n\Time::parse($sesi['waktu_mulai_aktual'])->toLocalizedString('dd MMM yyyy, HH:mm')) ?></td>
+                                        <td><?= esc(CodeIgniter\I18n\Time::parse($sesi['waktu_selesai_aktual'])->toLocalizedString('dd MMM yyyy, HH:mm')) ?></td>
+                                        <td>
+                                            <?php
+                                            $now = CodeIgniter\I18n\Time::now();
+                                            $start = CodeIgniter\I18n\Time::parse($sesi['waktu_mulai_aktual']);
+                                            $end = CodeIgniter\I18n\Time::parse($sesi['waktu_selesai_aktual']);
+                                            
+                                            if ($now->isBefore($start)) {
+                                                echo '<span class="badge bg-light-secondary">Akan Datang</span>';
+                                            } elseif ($now->isAfter($end)) {
+                                                echo '<span class="badge bg-light-dark">Selesai</span>';
+                                            } else {
+                                                echo '<span class="badge bg-light-success">Berlangsung</span>';
+                                            }
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <a href="#" class="btn btn-info btn-sm" title="Lihat Kehadiran"><i class="bi bi-eye"></i></a>
+                                            <a href="<?= base_url('dosen/sesi-absensi/edit/' . $sesi['id_sesi']) ?>" class="btn btn-warning btn-sm" title="Edit Sesi"><i class="bi bi-pencil"></i></a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted">Belum ada sesi absensi yang dibuat untuk kelas ini.</p>
+                <?php endif; ?>
                 
             </div>
             <div class="card-footer">

@@ -71,6 +71,23 @@ class EnrollmentModel extends Model
                     ->findAll();
     }
 
+     /**
+     * Mengambil daftar kelas yang diikuti oleh seorang mahasiswa.
+     * Berguna untuk menampilkan kelas di dashboard mahasiswa.
+     *
+     * @param string $nimMahasiswa NIM mahasiswa.
+     * @return array Daftar kelas yang diikuti.
+     */
+    public function getKelasByMahasiswa(string $nimMahasiswa): array
+    {
+        return $this->select('kelas.*, dosen.nama as nama_dosen, matakuliah.nama_matakuliah, enrollment.status_enrollment')
+                    ->join('kelas', 'kelas.kode_kelas = enrollment.kode_kelas_enrolled')
+                    ->join('dosen', 'dosen.nip = kelas.nip_dosen')
+                    ->join('matakuliah', 'matakuliah.id_matakuliah = kelas.id_matakuliah')
+                    ->where('enrollment.nim_mahasiswa', $nimMahasiswa)
+                    ->findAll();
+    }
+
     /**
      * Check if a student is already enrolled in a class.
      *
