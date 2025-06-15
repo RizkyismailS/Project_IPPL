@@ -35,24 +35,33 @@ class KehadiranModel extends Model
     }
 
     /**
-     * Menghitung statistik kehadiran untuk seorang mahasiswa.
+     * Menghitung statistik kehadiran (total hadir, sakit, izin, dan alpa)
+     * untuk seorang mahasiswa secara terpisah.
      *
      * @param string $nim NIM dari mahasiswa
-     * @return array Array berisi 'hadir' dan 'tidak_hadir'
+     * @return array Array berisi 'hadir', 'sakit', 'izin', dan 'alpa'
      */
     public function getAttendanceStats(string $nim): array
     {
-        $totalHadir = $this->where('nim', $nim)
-                           ->where('status_absen', 'hadir')
-                           ->countAllResults(false); // `false` agar query builder tidak di-reset
+        $builder = $this->db->table($this->table);
 
-        $totalTidakHadir = $this->where('nim', $nim)
-                                ->whereIn('status_absen', ['alpa', 'sakit', 'izin'])
-                                ->countAllResults();
+        // Menghitung semua status dalam satu query dengan conditional SUM
+        $builder->select("
+            SUM(CASE WHEN status_absen = 'hadir' THEN 1 ELSE 0 END) as total_hadir,
+            SUM(CASE WHEN status_absen = 'sakit' THEN 1 ELSE 0 END) as total_sakit,
+            SUM(CASE WHEN status_absen = 'izin' THEN 1 ELSE 0 END) as total_izin,
+            SUM(CASE WHEN status_absen = 'alpa' THEN 1 ELSE 0 END) as total_alpa
+        ");
+        $builder->where('nim', $nim);
+        
+        $result = $builder->get()->getRowArray();
 
+        // Mengembalikan hasil dengan memastikan nilainya integer
         return [
-            'hadir'       => $totalHadir,
-            'tidak_hadir' => $totalTidakHadir,
+            'hadir' => (int) ($result['total_hadir'] ?? 0),
+            'sakit' => (int) ($result['total_sakit'] ?? 0),
+            'izin'  => (int) ($result['total_izin']  ?? 0),
+            'alpa'  => (int) ($result['total_alpa']  ?? 0),
         ];
     }
 

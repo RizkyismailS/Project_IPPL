@@ -105,10 +105,11 @@
         <div class="col-12 col-lg-3">
              <div class="card">
                 <div class="card-header">
-                    <h4>Statistik</h4>
+                    <h4>Statistik Kehadiran</h4>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-2">
+
+                    <div class="row mb-3">
                         <div class="col-9">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-check-circle-fill text-success fs-4"></i>
@@ -119,17 +120,43 @@
                             <h5 class="mb-0 text-end"><?= esc($stats['hadir']) ?></h5>
                         </div>
                     </div>
+
+                    <div class="row mb-3">
+                        <div class="col-9">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-bandaid-fill text-warning fs-4"></i>
+                                <h5 class="mb-0 ms-3">Sakit</h5>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="mb-0 text-end"><?= esc($stats['sakit']) ?></h5>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-9">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-envelope-fill text-info fs-4"></i>
+                                <h5 class="mb-0 ms-3">Izin</h5>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="mb-0 text-end"><?= esc($stats['izin']) ?></h5>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-9">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-x-circle-fill text-danger fs-4"></i>
-                                <h5 class="mb-0 ms-3">Absen</h5>
+                                <h5 class="mb-0 ms-3">Alpa</h5>
                             </div>
                         </div>
                         <div class="col-3">
-                            <h5 class="mb-0 text-end"><?= esc($stats['tidak_hadir']) ?></h5>
+                            <h5 class="mb-0 text-end"><?= esc($stats['alpa']) ?></h5>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
