@@ -147,4 +147,59 @@ class MahasiswaController extends BaseController
                              ->with('error', 'A database error occurred. Please try again later.');
         }
     }
+
+    /**
+     * Memproses submit absensi dari mahasiswa.
+     */
+    public function submitAbsensi()
+    {
+        // Hanya bisa diakses via POST
+        if ($this->request->getMethod() !== 'post') {
+            return redirect()->back();
+        }
+
+        // Inisialisasi model
+        $kehadiranModel = new KehadiranModel();
+        $sesiAbsensiModel = new SesiAbsensiModel();
+
+        // Ambil data dari form dan session
+        $id_sesi = $this->request->getPost('id_sesi');
+        $nim_mahasiswa = session()->get('reference_id');
+
+        // --- Lakukan serangkaian validasi dan security check ---
+
+        // 1. Cek apakah sesi ada dan valid
+        $sesi = $sesiAbsensiModel->find($id_sesi);
+        if (!$sesi) {
+            return redirect()->back()->with('error', 'Sesi absensi tidak valid.');
+        }
+
+        // 2. Cek apakah sesi sedang berlangsung
+        $now = new \CodeIgniter\I18n\Time('now', 'Asia/Jakarta');
+        $start = new \CodeIgniter\I18n\Time($sesi['waktu_mulai_aktual']);
+        $end = new \CodeIgniter\I18n\Time($sesi['waktu_selesai_aktual']);
+
+        if (!$now->isBetween($start, $end)) {
+            return redirect()->back()->with('error', 'Waktu absensi untuk sesi ini sudah berakhir atau belum dimulai.');
+        }
+
+        // 3. Cek apakah mahasiswa sudah absen sebelumnya di sesi ini
+        if ($kehadiranModel->sudahAbsen($id_sesi, $nim_mahasiswa)) {
+             return redirect()->back()->with('error', 'Anda sudah melakukan absensi untuk sesi ini.');
+        }
+        
+        // --- Jika semua validasi lolos, simpan data ---
+        $dataToSave = [
+            'id_sesi' => $id_sesi,
+            'nim_mahasiswa' => $nim_mahasiswa,
+            'waktu_absensi' => $now->toDateTimeString(),
+            'status_kehadiran' => 'hadir', // Status default
+        ];
+
+        if ($kehadiranModel->save($dataToSave)) {
+            return redirect()->back()->with('success', 'Kehadiran berhasil dicatat!');
+        } else {
+            return redirect()->back()->with('error', 'Terjadi kesalahan. Gagal mencatat kehadiran.');
+        }
+    }
 }

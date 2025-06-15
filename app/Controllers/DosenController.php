@@ -405,12 +405,18 @@ class DosenController extends BaseController
         $enrollmentModel = new EnrollmentModel();
         $mahasiswaTerdaftar = $enrollmentModel->getMahasiswaByKelas($kodeKelas);
 
+
+        // --- TAMBAHKAN BLOK INI ---
+        $sesiAbsensiModel = new SesiAbsensiModel();
+        $sesiAbsensiList = $sesiAbsensiModel->getSesiByKelas($kodeKelas);
+        // -------------------------
+
         $data = [
             'title' => 'Detail Kelas: ' . esc($kelas['nama_kelas']),
             'kelas' => $kelas,
             'mahasiswa_terdaftar' => $mahasiswaTerdaftar,
-            'jumlah_mahasiswa_terdaftar' => count($mahasiswaTerdaftar) 
-
+            'jumlah_mahasiswa_terdaftar' => count($mahasiswaTerdaftar), 
+            'sesi_absensi_list' => $sesiAbsensiList // <-- Kirim data sesi ke view
         ];
 
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
