@@ -47,9 +47,141 @@ class DosenController extends BaseController
 
     public function dashboard()
     {
+        $dosenNip = $this->session->get('reference_id');
+        $db = \Config\Database::connect();
+        
+        // Get basic statistics
+        $totalKelas = $this->kelasModel->where('dosen_nip', $dosenNip)->countAllResults();
+        
+        // Get total students across all classes
+        $totalMahasiswaQuery = $db->query("
+            SELECT COUNT(DISTINCT e.nim_mahasiswa) as total 
+            FROM enrollment e 
+            JOIN kelas k ON e.kode_kelas_enrolled = k.kode_kelas 
+            WHERE k.dosen_nip = ? AND e.status_enrollment = 'aktif'", 
+            [$dosenNip]
+        );
+        $totalMahasiswa = $totalMahasiswaQuery->getRow()->total ?? 0;
+        
+        // Get total absensi sessions
+        $totalAbsensi = $this->sesiAbsensiModel
+            ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
+            ->where('kelas.dosen_nip', $dosenNip)
+            ->countAllResults();
+        
+        // Get weekly attendance data (last 5 weeks)
+        $weeklyAbsensiData = $db->query("
+            SELECT 
+                WEEK(sa.tanggal_sesi) as week_number,
+                COUNT(DISTINCT sa.id_sesi) as total_sesi,
+                SUM(CASE WHEN k.status_absen = 'hadir' THEN 1 ELSE 0 END) as total_hadir,
+                SUM(CASE WHEN k.status_absen = 'tidak_hadir' THEN 1 ELSE 0 END) as total_absen,
+                SUM(CASE WHEN k.status_absen = 'izin' THEN 1 ELSE 0 END) as total_izin
+            FROM sesi_absensi sa
+            JOIN kelas kl ON sa.kode_kelas = kl.kode_kelas
+            LEFT JOIN kehadiran k ON sa.id_sesi = k.id_sesi
+            WHERE kl.dosen_nip = ? 
+            AND sa.tanggal_sesi >= DATE_SUB(CURRENT_DATE(), INTERVAL 5 WEEK)
+            GROUP BY WEEK(sa.tanggal_sesi)
+            ORDER BY week_number ASC", 
+            [$dosenNip]
+        )->getResultArray();
+        
+        // Get class-specific attendance data
+        $kelasAbsensiData = $db->query("
+            SELECT 
+                kl.kode_kelas,
+                kl.nama_kelas,
+                mk.nama_matakuliah,
+                COUNT(DISTINCT sa.id_sesi) as total_sesi,
+                MAX(sa.tanggal_sesi) as last_session,
+                SUM(CASE WHEN k.status_absen = 'hadir' THEN 1 ELSE 0 END) as total_hadir,
+                COUNT(DISTINCT e.nim_mahasiswa) - COUNT(DISTINCT CASE WHEN k.status_absen IS NOT NULL THEN k.nim END) as belum_absen
+            FROM kelas kl
+            JOIN matakuliah mk ON kl.kode_matakuliah = mk.kode_matakuliah
+            LEFT JOIN sesi_absensi sa ON kl.kode_kelas = sa.kode_kelas
+            LEFT JOIN enrollment e ON kl.kode_kelas = e.kode_kelas_enrolled AND e.status_enrollment = 'aktif'
+            LEFT JOIN kehadiran k ON sa.id_sesi = k.id_sesi
+            WHERE kl.dosen_nip = ?
+            GROUP BY kl.kode_kelas, kl.nama_kelas, mk.nama_matakuliah
+            ORDER BY last_session DESC
+            LIMIT 5", 
+            [$dosenNip]
+        )->getResultArray();
+        
+        // Get overall attendance status distribution
+        $attendanceDistribution = $db->query("
+            SELECT 
+                k.status_absen,
+                COUNT(*) as total
+            FROM kehadiran k
+            JOIN sesi_absensi sa ON k.id_sesi = sa.id_sesi
+            JOIN kelas kl ON sa.kode_kelas = kl.kode_kelas
+            WHERE kl.dosen_nip = ?
+            GROUP BY k.status_absen", 
+            [$dosenNip]
+        )->getResultArray();
+        
+        // Format data for charts
+        $weekLabels = [];
+        $hadirData = [];
+        $absenData = [];
+        $izinData = [];
+        
+        foreach ($weeklyAbsensiData as $week) {
+            $weekLabels[] = 'Minggu ' . $week['week_number'];
+            $hadirData[] = (int)$week['total_hadir'];
+            $absenData[] = (int)$week['total_absen'];
+            $izinData[] = (int)$week['total_izin'];
+        }
+        
+        // Default values if no data
+        if (empty($weekLabels)) {
+            $weekLabels = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4', 'Minggu 5'];
+            $hadirData = [0, 0, 0, 0, 0];
+            $absenData = [0, 0, 0, 0, 0];
+            $izinData = [0, 0, 0, 0, 0];
+        }
+        
+        // Pie chart data
+        $pieLabels = [];
+        $pieValues = [];
+        
+        foreach ($attendanceDistribution as $dist) {
+            $status = match($dist['status_absen']) {
+                'hadir' => 'Hadir',
+                'tidak_hadir' => 'Tidak Hadir',
+                'izin' => 'Izin',
+                default => ucfirst($dist['status_absen'])
+            };
+            
+            $pieLabels[] = $status;
+            $pieValues[] = (int)$dist['total'];
+        }
+        
+        // Default values if no data
+        if (empty($pieLabels)) {
+            $pieLabels = ['Hadir', 'Tidak Hadir', 'Izin'];
+            $pieValues = [0, 0, 0];
+        }
+        
         return view('dosen/dashboard', [
-            'title' => 'Buat Kelas Baru',
+            'title' => 'Dashboard Dosen',
             'sidebar' => 'layout/dosen_sidebar',
+            'nama_user' => $this->session->get('nama_lengkap') ?? $this->session->get('username'),
+            // Statistics
+            'totalKelas' => $totalKelas,
+            'totalMahasiswa' => $totalMahasiswa,
+            'totalAbsensi' => $totalAbsensi,
+            // Chart data
+            'weekLabels' => json_encode($weekLabels),
+            'hadirData' => json_encode($hadirData),
+            'absenData' => json_encode($absenData),
+            'izinData' => json_encode($izinData),
+            'pieLabels' => json_encode($pieLabels),
+            'pieValues' => json_encode($pieValues),
+            // Table data
+            'kelasAbsensiData' => $kelasAbsensiData
         ]);
     }
 

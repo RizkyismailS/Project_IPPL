@@ -89,4 +89,6 @@ class DosenModel extends Model
                     ->where('dosen.nip', $nip)
                     ->first();
     }
+
+  
 }
