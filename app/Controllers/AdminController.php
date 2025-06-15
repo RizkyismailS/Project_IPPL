@@ -567,4 +567,23 @@ class AdminController extends BaseController
                              ->with('error', 'Terjadi kesalahan server saat mencoba menonaktifkan akun.');
         }
     }
+
+    /**
+     * Menampilkan halaman daftar semua sesi absensi untuk Admin.
+     */
+    public function listSesi()
+    {
+        // Inisialisasi model
+        $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
+        
+        // Mengambil data menggunakan metode yang sudah dibuat dan menambahkan pagination
+        $data = [
+            'title' => 'Manajemen Sesi Absensi',
+            'sesi'  => $sesiAbsensiModel->getAllSesiWithDetails()->paginate(10, 'sesi_group'), // 10 data per halaman
+            'pager' => $sesiAbsensiModel->pager,
+        ];
+
+        // Memuat view baru yang akan kita buat
+        return view('admin/list_semua_sesi', $data);
+    }
 }

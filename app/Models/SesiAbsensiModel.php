@@ -109,4 +109,22 @@ class SesiAbsensiModel extends Model
 
         return $builder->get()->getResultArray();
     }
+
+    /**
+     * Mengambil semua sesi absensi dari semua kelas dengan detail 
+     * nama kelas dan nama dosen. Dirancang untuk Admin.
+     *
+     * @return \CodeIgniter\Database\BaseBuilder
+     */
+    public function getAllSesiWithDetails()
+    {
+        // Menggunakan Query Builder untuk melakukan JOIN
+        $builder = $this->db->table($this->table . ' as sa'); // 'sa' adalah alias untuk sesi_absensi
+        $builder->select('sa.*, k.nama_kelas, d.nama as nama_dosen');
+        $builder->join('kelas as k', 'k.kode_kelas = sa.kode_kelas');
+        $builder->join('dosen as d', 'd.nip = k.dosen_nip');
+        $builder->orderBy('sa.created_at', 'DESC'); // Mengurutkan dari yang terbaru dibuat
+
+        return $builder; // Mengembalikan builder agar bisa di-paginate di controller
+    }
 }

@@ -42,6 +42,13 @@
                     </a>
                 </li>
 
+                <li class="sidebar-item <?= (uri_string() == 'admin/sesi') ? 'active' : '' ?>">
+                    <a href="/admin/sesi" class='sidebar-link'>
+                        <i class="bi bi-card-checklist"></i>
+                        <span>Manajemen Sesi</span>
+                    </a>
+                </li>
+
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-graph-up"></i>

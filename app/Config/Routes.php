@@ -28,6 +28,7 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->post('dosen/delete/(:segment)', 'AdminController::deleteDosen/$1'); // Menggunakan POST
     $routes->get('dosen/activate/(:segment)', 'AdminController::activateDosen/$1');
     $routes->get('dosen/deactivate/(:segment)', 'AdminController::deactivateDosen/$1');
+    $routes->get('sesi', 'AdminController::listSesi');
 });
 
 // Dosen Routes (Gunakan grup dengan filter)
