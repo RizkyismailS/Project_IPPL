@@ -35,7 +35,7 @@
                             </div>
                         </div>
                         <div class="card-footer p-3">
-                             <a href="#" class="btn btn-primary d-block">Lihat Sesi & Absensi</a>
+                             <a href="/mahasiswa/sesi/<?= esc($k['kode_kelas']) ?>" class="btn btn-primary d-block">Lihat Sesi & Absensi</a>
                         </div>
                     </div>
                 </div>

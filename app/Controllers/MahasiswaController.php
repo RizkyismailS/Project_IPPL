@@ -247,4 +247,66 @@ class MahasiswaController extends BaseController
         // Memuat view baru yang akan kita buat sekarang
         return view('mahasiswa/list_kelas', $data);
     }
+
+    /**
+     * Menampilkan daftar sesi untuk satu kelas spesifik.
+     *
+     * @param string $kode_kelas Kode kelas dari URL.
+     */
+    public function listSesi(string $kode_kelas)
+    {
+        // Inisialisasi model
+        $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
+        $kelasModel = new \App\Models\KelasModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        helper('date'); // Memuat Date Helper
+        
+        $nim = session()->get('reference_id');
+
+        // Keamanan: Pastikan mahasiswa terdaftar di kelas ini
+        $isEnrolled = $enrollmentModel
+            ->where('nim_mahasiswa', $nim)
+            ->where('kode_kelas_enrolled', $kode_kelas)
+            ->where('status_enrollment', 'aktif')
+            ->first();
+
+        if (!$isEnrolled) {
+            return redirect()->to('/mahasiswa/kelas')->with('error', 'Anda tidak memiliki akses ke kelas ini.');
+        }
+
+        $kelas = $kelasModel->find($kode_kelas);
+        
+        // Ambil daftar sesi mentah dari model
+        $sesi_list_raw = $sesiAbsensiModel->getSesiWithStatusForMahasiswa($kode_kelas, $nim);
+
+        // ================== LOGIKA BARU DI SINI ==================
+        // Proses daftar sesi untuk menentukan status final yang akan ditampilkan
+        $sesi_list_processed = [];
+        $waktu_sekarang = now('Asia/Jakarta'); // Ambil waktu WIB saat ini
+
+        helper('session_status');
+
+        // In your listSesi method, replace the status calculation with:
+        foreach ($sesi_list_raw as $sesi) {
+            $sesi['status_final'] = calculate_session_status(
+                [
+                    'status' => $sesi['status_sesi'],
+                    'waktu_mulai_aktual' => $sesi['waktu_mulai_aktual'],
+                    'waktu_selesai_aktual' => $sesi['waktu_selesai_aktual']
+                ],
+                $sesi['status_absen'],
+                'mahasiswa'
+            );
+            
+            $sesi_list_processed[] = $sesi;
+        }
+
+        $data = [
+            'title'     => 'Daftar Sesi',
+            'kelas'     => $kelas,
+            'sesi_list' => $sesi_list_processed // Kirim data yang sudah diproses
+        ];
+
+        return view('mahasiswa/list_sesi', $data);
+    }
 }

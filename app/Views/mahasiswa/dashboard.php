@@ -36,8 +36,8 @@
 
             <?php if (!empty($activeSession)) : ?>
             <div class="card border-primary shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="card-title mb-0"><i class="bi bi-broadcast"></i> Sesi Absensi Sedang Berlangsung!</h4>
+                <div class="card-header bg-primary mb-4">
+                    <h4 class="card-title mb-0 text-white"><i class="bi bi-broadcast"></i> Sesi Absensi Sedang Berlangsung!</h4>
                 </div>
                 <div class="card-body">
                     <h5 class="card-title"><?= esc($activeSession['nama_kelas']) ?></h5>
