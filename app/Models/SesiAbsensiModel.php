@@ -150,4 +150,9 @@ class SesiAbsensiModel extends Model
             ->get()
             ->getResultArray();
     }
+
+    public function getCalculatedSesiCount($waktu_mulai, $now)
+    {
+        
+    }
 }

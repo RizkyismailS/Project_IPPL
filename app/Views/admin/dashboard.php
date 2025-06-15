@@ -9,25 +9,25 @@
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
                 <div>Total Dosen</div>
-                <h4>40</h4>
+                <h4><?= $total_dosen?></h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
                 <div>Total Mahasiswa</div>
-                <h4>1.204</h4>
+                <h4><?= $total_mahasiswa?></h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
                 <div>Kelas Aktif</div>
-                <h4>12</h4>
+                <h4><?= $total_kelas_aktif?></h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="p-3 bg-white rounded shadow-sm text-center">
                 <div>Sesi Aktif</div>
-                <h4>8</h4>
+                <h4><?= $total_sesi_aktif?></h4>
             </div>
         </div>
     </div>
@@ -37,15 +37,13 @@
             <div class="bg-white p-3 rounded shadow-sm">
                 <h5>Aktifitas Sesi Absensi</h5>
                 <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-success text-white">
-                        Pemrograman Web Dasar <span>25 Min left</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-success text-white">
-                        Sistem Operasi <span>15 Min left</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-success text-white">
-                        Statistika <span>03 Min left</span>
-                    </li>
+                    <?php foreach ($aktifitas_sesi as $sesi): ?>
+                        <?php if($sesi['waktu_selesai_kelas'] != $sesi['hitung_waktu']->format('H:i:s')){?>
+                        <li class="list-group-item d-flex justify-content-between align-items-center bg-success text-white">
+                            <?= $sesi['nama_kelas']?> <span><?= $sesi['hitung_waktu']->format('i') ?></span>
+                        </li>
+                        <?php } else ?>
+                    <?php endforeach; ?>
                 </ul>
             </div>
         </div>
