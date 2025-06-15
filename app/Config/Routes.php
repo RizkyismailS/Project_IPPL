@@ -16,6 +16,8 @@ $routes->post('/login/process', 'AuthController::processLogin');
 $routes->get('/register/mahasiswa', 'AuthController::registerMahasiswa');
 $routes->post('/register/mahasiswa/process', 'AuthController::processRegisterMahasiswa');
 $routes->get('/logout', 'AuthController::logout');
+$routes->cli('cron/update-session-statuses', 'CronController::updateSessionStatuses');
+
 
 // Admin Routes (Gunakan grup dengan filter untuk keamanan)
 $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($routes) { // Buat filter adminAuthFilter
@@ -59,4 +61,5 @@ $routes->group('mahasiswa', ['filter' => 'mahasiswaAuthFilter'], static function
     $routes->get('enroll', 'MahasiswaController::enrollForm');
     $routes->post('enroll/process', 'MahasiswaController::processEnrollment');
     $routes->get('kelas', 'MahasiswaController::listKelas');
+    $routes->get('sesi/(:segment)', 'MahasiswaController::listSesi/$1');
 });

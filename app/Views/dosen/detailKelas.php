@@ -30,7 +30,15 @@ echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
                             <tbody>
                                 <tr><th style="width: 40%;">Kode Kelas</th><td>: <?= esc($kelas['kode_kelas']) ?></td></tr>
                                 <tr><th>Nama Kelas</th><td>: <?= esc($kelas['nama_kelas']) ?></td></tr>
-                                <tr><th>Mata Kuliah</th><td>: <?= esc($kelas['nama_matakuliah']) ?> (<?= esc($kelas['sks']) ?> SKS)</td></tr>
+                                <tr>
+                                    <th>Mata Kuliah</th>
+                                    <td>: 
+                                        <?= esc($kelas['nama_matakuliah'] ?? 'Tidak Tersedia') ?> 
+                                        <?php if(isset($kelas['sks'])): ?>
+                                            (<?= esc($kelas['sks']) ?> SKS)
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                                 <tr><th>Dosen Pengampu</th><td>: <?= esc($kelas['nama_dosen']) ?></td></tr>
                                 <tr><th>Kode Enrollment</th><td>: <code><?= esc($kelas['kode_enrollment']) ?></code></td></tr>
                             </tbody>
@@ -118,51 +126,50 @@ echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
                     <i class="bi bi-plus-lg"></i> Tambah Sesi Absensi Baru
                 </a>
 
-                <?php if (!empty($sesi_absensi_list) && is_array($sesi_absensi_list)): ?>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
+                <div class="table-responsive mt-3">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Topik</th>
+                                <th>Waktu Mulai</th>
+                                <th>Waktu Selesai</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($sesi_absensi)) : ?>
                                 <tr>
-                                    <th>Topik Perkuliahan</th>
-                                    <th>Absen Dibuka</th>
-                                    <th>Absen Ditutup</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <td colspan="5" class="text-center">Belum ada sesi absensi yang dibuat untuk kelas ini.</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($sesi_absensi_list as $sesi): ?>
+                            <?php else : ?>
+                                <?php foreach ($sesi_absensi as $sesi) : ?>
                                     <tr>
-                                        <td><?= esc($sesi['topik_perkuliahan']) ?></td>
-                                        <td><?= esc(CodeIgniter\I18n\Time::parse($sesi['waktu_mulai_aktual'])->toLocalizedString('dd MMM yyyy, HH:mm')) ?></td>
-                                        <td><?= esc(CodeIgniter\I18n\Time::parse($sesi['waktu_selesai_aktual'])->toLocalizedString('dd MMM yyyy, HH:mm')) ?></td>
-                                        <td>
+                                        <td><?= esc($sesi['topik_perkuliahan'] ?: 'Perkuliahan Rutin') ?></td>
+                                        <td><?= date('d M Y, H:i', strtotime($sesi['waktu_mulai_aktual'])) ?></td>
+                                        <td><?= $sesi['waktu_selesai_aktual'] ? date('d M Y, H:i', strtotime($sesi['waktu_selesai_aktual'])) : 'Belum Selesai' ?></td>
+                                        <td class="text-center">
                                             <?php
-                                            $now = CodeIgniter\I18n\Time::now();
-                                            $start = CodeIgniter\I18n\Time::parse($sesi['waktu_mulai_aktual']);
-                                            $end = CodeIgniter\I18n\Time::parse($sesi['waktu_selesai_aktual']);
-                                            
-                                            if ($now->isBefore($start)) {
-                                                echo '<span class="badge bg-light-secondary">Akan Datang</span>';
-                                            } elseif ($now->isAfter($end)) {
-                                                echo '<span class="badge bg-light-dark">Selesai</span>';
-                                            } else {
-                                                echo '<span class="badge bg-light-success">Berlangsung</span>';
-                                            }
+                                                $status = $sesi['status_tampil'];
+                                                $badgeClass = 'bg-light-secondary'; // Default
+                                                if ($status == 'Aktif') $badgeClass = 'bg-success';
+                                                if ($status == 'Selesai') $badgeClass = 'bg-dark';
+                                                if ($status == 'Dibatalkan') $badgeClass = 'bg-danger';
+                                                if ($status == 'Terlewat') $badgeClass = 'bg-warning';
                                             ?>
+                                            <span class="badge <?= $badgeClass ?>"><?= esc($status) ?></span>
                                         </td>
-                                        <td>
-                                            <a href="#" class="btn btn-info btn-sm" title="Lihat Kehadiran"><i class="bi bi-eye"></i></a>
-                                            <a href="<?= base_url('dosen/sesi-absensi/edit/' . $sesi['id_sesi']) ?>" class="btn btn-warning btn-sm" title="Edit Sesi"><i class="bi bi-pencil"></i></a>
+                                        <td class="text-center">
+                                            <a href="<?= base_url('dosen/laporan-sesi/' . $sesi['id_sesi']) ?>" class="btn btn-sm btn-info">
+                                                Laporan
+                                            </a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted">Belum ada sesi absensi yang dibuat untuk kelas ini.</p>
-                <?php endif; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
                 
             </div>
             <div class="card-footer">

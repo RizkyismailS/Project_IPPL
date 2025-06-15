@@ -422,46 +422,81 @@ class DosenController extends BaseController
     }
 
     /**
+     * Updates session statuses based on current time.
+     * This should be called regularly via cron job or before displaying sessions.
+     */
+    public function updateSessionStatuses()
+    {
+        $now = date('Y-m-d H:i:s');
+        
+        // Update sessions that have passed their end time to 'selesai'
+        $this->sesiAbsensiModel->where('status', 'aktif')
+                            ->where('waktu_selesai_aktual <', $now)
+                            ->set(['status' => 'selesai'])
+                            ->update();
+        
+        // Update sessions that have passed their scheduled time but weren't activated to 'terlewat'
+        // The NOT EXISTS subquery needs to be properly formatted
+        $subquery = $this->sesiAbsensiModel->db->table('kehadiran')
+                ->select('1')
+                ->where('kehadiran.id_sesi = sesi_absensi.id_sesi');
+                
+        $this->sesiAbsensiModel->where('status', 'aktif')
+                            ->where('waktu_mulai_aktual <', $now)
+                            ->where('waktu_selesai_aktual <', $now)
+                            ->where("NOT EXISTS ({$subquery->getCompiledSelect()})", null, false)
+                            ->set(['status' => 'terlewat'])
+                            ->update();
+                            
+        return true;
+    }
+
+    
+    /**
      * Menampilkan detail kelas yang diajar oleh dosen.
      * Dosen hanya bisa melihat detail kelas yang memang dia ampu.
      * @param string $kodeKelas
      */
     public function detailKelas(string $kodeKelas)
     {
-        $dosenNipLogin = $this->session->get('reference_id');
-
+        $this->updateSessionStatuses();
+        // --- Langkah Keamanan ---
+        $nip_dosen = $this->session->get('reference_id');
+        
+        // Gunakan getKelasDetail untuk mendapatkan data lengkap dengan join ke mata kuliah dan dosen
         $kelas = $this->kelasModel->getKelasDetail($kodeKelas);
-
-        if (!$kelas) {
-            log_message('error', "[DosenController] Kelas dengan kode $kodeKelas tidak ditemukan saat dosen $dosenNipLogin mencoba melihat detail.");
-            return redirect()->to(base_url('dosen/kelas'))->with('error', 'Kelas tidak ditemukan.');
+        
+        if (!$kelas || $kelas['dosen_nip'] != $nip_dosen) {
+            return redirect()->to('/dosen/kelas')->with('error', 'Anda tidak memiliki akses ke kelas ini.');
         }
+        
+        // --- Mempersiapkan Data Sesi ---
+        // 1. Ambil data sesi mentah dari database
+        $sesi_absensi_raw = $this->sesiAbsensiModel->where('kode_kelas', $kodeKelas)->orderBy('tanggal_sesi', 'DESC')->findAll();
 
-       
-        if ($kelas['dosen_nip'] !== $dosenNipLogin) {
-            log_message('warning', "[DosenController] Dosen $dosenNipLogin mencoba akses detail kelas $kodeKelas yang bukan miliknya.");
-           
-            return redirect()->to(base_url('dosen/kelas'))->with('error', 'Anda tidak memiliki hak untuk melihat detail kelas ini.');
+        // 2. Proses data sesi untuk menambahkan status yang akan ditampilkan di view
+        $sesi_absensi_processed = [];
+        $waktu_sekarang = time(); // Mengambil waktu sekarang
+
+        helper('session_status');
+
+        foreach ($sesi_absensi_raw as $sesi) {
+            $sesi['status_tampil'] = calculate_session_status($sesi, null, 'dosen');
+            $sesi_absensi_processed[] = $sesi;
         }
+        
+        // Get mahasiswa data from enrollment
+        $mahasiswa_terdaftar = $this->enrollmentModel->getMahasiswaByKelas($kodeKelas);
+        $jumlah_mahasiswa_terdaftar = count($mahasiswa_terdaftar);
 
-        $enrollmentModel = new EnrollmentModel();
-        $mahasiswaTerdaftar = $enrollmentModel->getMahasiswaByKelas($kodeKelas);
-
-
-        // --- TAMBAHKAN BLOK INI ---
-        $sesiAbsensiModel = new SesiAbsensiModel();
-        $sesiAbsensiList = $sesiAbsensiModel->getSesiByKelas($kodeKelas);
-        // -------------------------
-
+        // Siapkan semua data untuk dikirim ke view
         $data = [
-            'title' => 'Detail Kelas: ' . esc($kelas['nama_kelas']),
-            'kelas' => $kelas,
-            'mahasiswa_terdaftar' => $mahasiswaTerdaftar,
-            'jumlah_mahasiswa_terdaftar' => count($mahasiswaTerdaftar), 
-            'sesi_absensi_list' => $sesiAbsensiList // <-- Kirim data sesi ke view
+            'title'        => 'Detail Kelas',
+            'kelas'        => $kelas,
+            'mahasiswa_terdaftar' => $mahasiswa_terdaftar,
+            'jumlah_mahasiswa_terdaftar' => $jumlah_mahasiswa_terdaftar,
+            'sesi_absensi' => $sesi_absensi_processed, // Mengirim data sesi yang sudah diproses
         ];
-
-        $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
 
         return view('dosen/detailKelas', $data);
     }

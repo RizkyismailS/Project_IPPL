@@ -127,4 +127,27 @@ class SesiAbsensiModel extends Model
 
         return $builder; // Mengembalikan builder agar bisa di-paginate di controller
     }
+
+    /**
+     * Mengambil semua sesi untuk sebuah kelas, beserta status kehadiran
+     * dari seorang mahasiswa spesifik.
+     *
+     * @param string $kode_kelas Kode kelas yang ingin dilihat sesinya.
+     * @param string $nim NIM mahasiswa yang sedang login.
+     * @return array Daftar sesi beserta status kehadiran mahasiswa.
+     */
+    public function getSesiWithStatusForMahasiswa($kode_kelas, $nim)
+    {
+        return $this->db->table('sesi_absensi')
+            ->select('
+                sesi_absensi.*,
+                sesi_absensi.status AS status_sesi,
+                kehadiran.status_absen
+            ')
+            ->join('kehadiran', 'kehadiran.id_sesi = sesi_absensi.id_sesi AND kehadiran.nim = "' . $nim . '"', 'left')
+            ->where('sesi_absensi.kode_kelas', $kode_kelas)
+            ->orderBy('sesi_absensi.waktu_mulai_aktual', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
 }
