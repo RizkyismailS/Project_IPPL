@@ -211,7 +211,7 @@ class MahasiswaController extends BaseController
             'nim'           => $nim,
             'id_sesi'       => $id_sesi,
             'status_absen'  => 'hadir', // Saat mahasiswa klik tombol, statusnya otomatis 'hadir'
-            'waktu_absen'   => now('Asia/Jakarta'), // Mengambil waktu saat ini (WIB)
+            'waktu_absen'   => date('Y-m-d H:i:s'), // Mengambil waktu saat ini (WIB)
         ];
 
         // 6. Simpan data dan berikan feedback
@@ -284,6 +284,9 @@ class MahasiswaController extends BaseController
         $sesi_list_processed = [];
         $waktu_sekarang = now('Asia/Jakarta'); // Ambil waktu WIB saat ini
 
+        usort($sesi_list_processed, function($a, $b) {
+            return strtotime($a['waktu_mulai_aktual']) <=> strtotime($b['waktu_mulai_aktual']);
+        });
         helper('session_status');
 
         // In your listSesi method, replace the status calculation with:
