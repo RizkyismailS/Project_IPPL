@@ -43,7 +43,7 @@ class MahasiswaController extends BaseController
         $mahasiswaModel = new MahasiswaModel();
         $sesiAbsensiModel = new SesiAbsensiModel();
         $kehadiranModel = new KehadiranModel();
-        
+
         // Ambil NIM dari session
         $nim_mahasiswa = session()->get('reference_id');
 
@@ -65,11 +65,11 @@ class MahasiswaController extends BaseController
 
         // Kumpulkan semua data untuk dikirim ke view
         $data = [
-            'title'         => 'Dashboard Mahasiswa',
-            'mahasiswa'     => $mahasiswa,
+            'title' => 'Dashboard Mahasiswa',
+            'mahasiswa' => $mahasiswa,
             'activeSession' => $activeSession,
-            'stats'         => $stats,
-            'history'       => $history,
+            'stats' => $stats,
+            'history' => $history,
         ];
 
         return view('mahasiswa/dashboard', $data);
@@ -100,7 +100,7 @@ class MahasiswaController extends BaseController
         // Get user's full name from session, fallback to mahasiswa data, fallback to generic
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? ($mahasiswaData['nama'] ?? 'Student');
         // Get user's email from mahasiswa data
-        $data['email_user'] = $mahasiswaData['email'] ?? ''; 
+        $data['email_user'] = $mahasiswaData['email'] ?? '';
         $data['errors'] = session()->getFlashdata('errors');
 
         return view('mahasiswa/enroll', $data);
@@ -116,8 +116,8 @@ class MahasiswaController extends BaseController
 
         $validation = $this->validate([
             'kode_enrollment' => [
-                'label'  => 'Enrollment Code',
-                'rules'  => 'required|alpha_numeric|max_length[20]',
+                'label' => 'Enrollment Code',
+                'rules' => 'required|alpha_numeric|max_length[20]',
                 'errors' => [
                     'required' => '{field} is required.',
                 ],
@@ -126,8 +126,8 @@ class MahasiswaController extends BaseController
 
         if (!$validation) {
             return redirect()->to(base_url('mahasiswa/enroll'))
-                             ->withInput()
-                             ->with('errors', $this->validator->getErrors());
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
         }
 
         $kodeEnrollment = $this->request->getVar('kode_enrollment');
@@ -136,39 +136,39 @@ class MahasiswaController extends BaseController
 
         if (!$kelas) {
             return redirect()->to(base_url('mahasiswa/enroll'))
-                             ->withInput()
-                             ->with('error', 'Invalid Enrollment Code. The class was not found.');
+                ->withInput()
+                ->with('error', 'Invalid Enrollment Code. The class was not found.');
         }
 
         $kodeKelas = $kelas['kode_kelas'];
 
         if ($this->enrollmentModel->isEnrolled($nimMahasiswa, $kodeKelas)) {
             return redirect()->to(base_url('mahasiswa/enroll'))
-                             ->with('warning', 'You are already enrolled in class "' . esc($kelas['nama_kelas']) . '".');
+                ->with('warning', 'You are already enrolled in class "' . esc($kelas['nama_kelas']) . '".');
         }
 
         $enrollmentData = [
-            'nim_mahasiswa'       => $nimMahasiswa,
+            'nim_mahasiswa' => $nimMahasiswa,
             'kode_kelas_enrolled' => $kodeKelas,
-            'status_enrollment'   => 'aktif', 
+            'status_enrollment' => 'aktif',
         ];
 
         try {
             if ($this->enrollmentModel->insert($enrollmentData)) {
                 log_message('info', "Student NIM '{$nimMahasiswa}' successfully enrolled in class '{$kodeKelas}'.");
-                return redirect()->to(base_url('mahasiswa/dashboard')) 
-                                 ->with('success', 'You have successfully enrolled in class "' . esc($kelas['nama_kelas']) . '"!');
+                return redirect()->to(base_url('mahasiswa/dashboard'))
+                    ->with('success', 'You have successfully enrolled in class "' . esc($kelas['nama_kelas']) . '"!');
             } else {
                 log_message('error', '[MahasiswaController] EnrollmentModel insert failed. Errors: ' . json_encode($this->enrollmentModel->errors()));
                 return redirect()->to(base_url('mahasiswa/enroll'))
-                                 ->withInput()
-                                 ->with('error', 'Failed to enroll in the class due to a validation error.');
+                    ->withInput()
+                    ->with('error', 'Failed to enroll in the class due to a validation error.');
             }
         } catch (DatabaseException $e) {
             log_message('error', '[MahasiswaController] DatabaseException during enrollment: ' . $e->getMessage());
             return redirect()->to(base_url('mahasiswa/enroll'))
-                             ->withInput()
-                             ->with('error', 'A database error occurred. Please try again later.');
+                ->withInput()
+                ->with('error', 'A database error occurred. Please try again later.');
         }
     }
 
@@ -178,45 +178,77 @@ class MahasiswaController extends BaseController
     public function submitAbsensi()
     {
         $kehadiranModel = new \App\Models\KehadiranModel();
-        helper('date'); // Memuat helper untuk fungsi now()
+        $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
+        helper('date'); // Load date helper
 
         $id_sesi = $this->request->getPost('id_sesi');
         if (empty($id_sesi)) {
-            // Jika tidak ada id_sesi, kembalikan dengan pesan error
             return redirect()->back()->with('error', 'Sesi absensi tidak valid atau tidak ditemukan.');
         }
 
-        // 3. Ambil data NIM mahasiswa dari session
+        // Get mahasiswa NIM from session
         $nim = session()->get('reference_id');
         if (empty($nim)) {
-            // Jika tidak ada nim di session, paksa login ulang
             return redirect()->to('/login')->with('error', 'Sesi Anda tidak valid, silakan login kembali.');
         }
 
-        // 4. Langkah Keamanan: Cek apakah mahasiswa sudah pernah absen untuk sesi ini
+        // Security check: Has mahasiswa already submitted attendance for this session?
         $cekSudahAbsen = $kehadiranModel->where('nim', $nim)
-                                       ->where('id_sesi', $id_sesi)
-                                       ->first();
+            ->where('id_sesi', $id_sesi)
+            ->first();
 
         if ($cekSudahAbsen) {
-            // Jika data sudah ada, jangan proses dan beri pesan
             return redirect()->to('/mahasiswa/dashboard')->with('error', 'Anda sudah melakukan absensi untuk sesi ini.');
         }
 
-        // 5. Siapkan data untuk dimasukkan ke tabel `kehadiran`
+        // Get status_absen from form (hadir, sakit, izin)
+        $status_absen = $this->request->getPost('status_absen');
+        if (!in_array($status_absen, ['hadir', 'sakit', 'izin'])) {
+            $status_absen = 'hadir'; // Default to hadir if invalid
+        }
+
+        // Get keterangan (optional)
+        $keterangan = $this->request->getPost('keterangan');
+
+        // Prepare data for kehadiran table
         $dataToSave = [
-            'nim'           => $nim,
-            'id_sesi'       => $id_sesi,
-            'status_absen'  => 'hadir', // Saat mahasiswa klik tombol, statusnya otomatis 'hadir'
-            'waktu_absen'   => date('Y-m-d H:i:s'), // Mengambil waktu saat ini (WIB)
+            'nim' => $nim,
+            'id_sesi' => $id_sesi,
+            'status_absen' => $status_absen,
+            'waktu_absen' => date('Y-m-d H:i:s'), // Current time in server timezone
+            'keterangan' => $keterangan
         ];
 
-        // 6. Simpan data dan berikan feedback
+        // Handle file upload if proof photo is required
+        $sesi = $sesiAbsensiModel->find($id_sesi);
+        if ($sesi && $sesi['perlu_bukti_foto'] == 1) {
+            $bukti_foto = $this->request->getFile('bukti_foto');
+
+            if ($bukti_foto && $bukti_foto->isValid() && !$bukti_foto->hasMoved()) {
+                $newName = $nim . '_' . $id_sesi . '_' . date('Ymd_His') . '.' . $bukti_foto->getExtension();
+
+                if ($bukti_foto->move(ROOTPATH . 'public/uploads/bukti_foto/', $newName)) {
+                    $dataToSave['path_bukti_foto'] = 'uploads/bukti_foto/' . $newName;
+                } else {
+                    return redirect()->back()->with('error', 'Gagal mengunggah bukti foto. Silakan coba lagi.');
+                }
+            } else if ($sesi['perlu_bukti_foto'] == 1) {
+                return redirect()->back()->with('error', 'Bukti foto wajib diunggah untuk sesi ini.');
+            }
+        }
+
+        // Save data and provide feedback
         if ($kehadiranModel->save($dataToSave)) {
-            // Jika penyimpanan berhasil
-            return redirect()->to('/mahasiswa/dashboard')->with('success', 'Kehadiran Anda berhasil dicatat!');
+            // Success message based on status
+            $statusMessages = [
+                'hadir' => 'Kehadiran Anda berhasil dicatat!',
+                'sakit' => 'Ketidakhadiran (sakit) Anda berhasil dicatat!',
+                'izin' => 'Ketidakhadiran (izin) Anda berhasil dicatat!'
+            ];
+
+            $message = $statusMessages[$status_absen] ?? 'Absensi Anda berhasil dicatat!';
+            return redirect()->to('/mahasiswa/dashboard')->with('success', $message);
         } else {
-            // Jika penyimpanan gagal karena alasan lain
             return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
         }
     }
@@ -257,7 +289,7 @@ class MahasiswaController extends BaseController
         $kelasModel = new \App\Models\KelasModel();
         $enrollmentModel = new \App\Models\EnrollmentModel();
         helper('date'); // Memuat Date Helper
-        
+
         $nim = session()->get('reference_id');
 
         // Keamanan: Pastikan mahasiswa terdaftar di kelas ini
@@ -272,16 +304,16 @@ class MahasiswaController extends BaseController
         }
 
         $kelas = $kelasModel->find($kode_kelas);
-        
+
         // Ambil daftar sesi mentah dari model
         $sesi_list_raw = $sesiAbsensiModel->getSesiWithStatusForMahasiswa($kode_kelas, $nim);
 
-        
+
         $sesi_list_processed = [];
         $waktu_sekarang = now('Asia/Jakarta'); // Ambil waktu WIB saat ini
 
         helper('session_status');
-        
+
         // In your listSesi method, replace the status calculation with:
         foreach ($sesi_list_raw as $sesi) {
             $sesi['status_final'] = calculate_session_status(
@@ -293,16 +325,16 @@ class MahasiswaController extends BaseController
                 $sesi['status_absen'],
                 'mahasiswa'
             );
-            
+
             $sesi_list_processed[] = $sesi;
         }
-        usort($sesi_list_processed, function($a, $b) {
+        usort($sesi_list_processed, function ($a, $b) {
             return strtotime($b['waktu_mulai_aktual']) <=> strtotime($a['waktu_mulai_aktual']);
         });
-        
+
         $data = [
-            'title'     => 'Daftar Sesi',
-            'kelas'     => $kelas,
+            'title' => 'Daftar Sesi',
+            'kelas' => $kelas,
             'sesi_list' => $sesi_list_processed // Kirim data yang sudah diproses
         ];
 

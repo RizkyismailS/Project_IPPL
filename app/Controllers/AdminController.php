@@ -85,7 +85,6 @@ class AdminController extends BaseController
         $data['errors_user'] = session()->getFlashdata('errors_user');
 
         return view('admin/create', $data);
-        return $this->response->setJSON(['status' => 'info', 'message' => 'Endpoint untuk menampilkan form pembuatan akun dosen (via GET).']);
     }
 
     public function storeUserDosen()
@@ -239,19 +238,6 @@ class AdminController extends BaseController
         $userAkun = $this->userModel->where('reference_id', $nip)
                                     ->where('role', 'dosen')
                                     ->first();
-
-        if (!$dosenProfil) {
-            // Jika dari browser
-            if (!$this->requestIsJson()) { // Helper method untuk cek $wantsJson
-                return redirect()->to(base_url('admin/dosen/list'))
-                                ->with('error', 'Data dosen dengan NIP ' . esc($nip) . ' tidak ditemukan.');
-            }
-            // Jika API
-            return $this->response->setStatusCode(404)->setJSON([
-                'status' => 'error',
-                'message' => 'Data dosen tidak ditemukan.'
-            ]);
-        }
 
         $data['title'] = "Edit Data Dosen";
         $data['dosen_profil'] = $dosenProfil;

@@ -88,26 +88,12 @@ class SesiAbsensiModel extends Model
      */
     public function getLaporanKehadiran(int $id_sesi): array
     {
-        // 1. Dapatkan dulu kode kelas dari id_sesi yang diberikan
-        $sesi = $this->find($id_sesi);
-        if (!$sesi) {
-            return []; // Kembalikan array kosong jika sesi tidak ditemukan
-        }
-        $kode_kelas = $sesi['kode_kelas'];
-
-        // 2. Buat query utama menggunakan Query Builder
-        $builder = $this->db->table('enrollment');
-        
-        $builder->select('mahasiswa.nim, mahasiswa.nama, IFNULL(kehadiran.status_absen, "Alpa") as status_kehadiran');
-        $builder->join('mahasiswa', 'mahasiswa.nim = enrollment.nim_mahasiswa');
-        
-        // LEFT JOIN ke tabel kehadiran dengan DUA kondisi
-        $builder->join('kehadiran', 'kehadiran.nim = enrollment.nim_mahasiswa AND kehadiran.id_sesi = ' . $this->db->escape($id_sesi), 'left');
-        
-        $builder->where('enrollment.kode_kelas_enrolled', $kode_kelas);
-        $builder->orderBy('mahasiswa.nim', 'ASC');
-
-        return $builder->get()->getResultArray();
+        return $this->db->table('kehadiran')
+        ->select('kehadiran.nim, mahasiswa.nama, kehadiran.status_absen, kehadiran.keterangan, kehadiran.path_bukti_foto')
+        ->join('mahasiswa', 'mahasiswa.nim = kehadiran.nim')
+        ->where('kehadiran.id_sesi', $id_sesi)
+        ->get()
+        ->getResultArray();
     }
 
     /**
