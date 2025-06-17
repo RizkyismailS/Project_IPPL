@@ -177,11 +177,9 @@ class MahasiswaController extends BaseController
      */
     public function submitAbsensi()
     {
-        // 1. Inisialisasi Model dan Helper yang dibutuhkan
         $kehadiranModel = new \App\Models\KehadiranModel();
         helper('date'); // Memuat helper untuk fungsi now()
 
-        // 2. Validasi input dari form
         $id_sesi = $this->request->getPost('id_sesi');
         if (empty($id_sesi)) {
             // Jika tidak ada id_sesi, kembalikan dengan pesan error
@@ -206,7 +204,6 @@ class MahasiswaController extends BaseController
         }
 
         // 5. Siapkan data untuk dimasukkan ke tabel `kehadiran`
-        // Pastikan nama kolom sesuai dengan skema database Anda
         $dataToSave = [
             'nim'           => $nim,
             'id_sesi'       => $id_sesi,
@@ -279,16 +276,12 @@ class MahasiswaController extends BaseController
         // Ambil daftar sesi mentah dari model
         $sesi_list_raw = $sesiAbsensiModel->getSesiWithStatusForMahasiswa($kode_kelas, $nim);
 
-        // ================== LOGIKA BARU DI SINI ==================
-        // Proses daftar sesi untuk menentukan status final yang akan ditampilkan
+        
         $sesi_list_processed = [];
         $waktu_sekarang = now('Asia/Jakarta'); // Ambil waktu WIB saat ini
 
-        usort($sesi_list_processed, function($a, $b) {
-            return strtotime($a['waktu_mulai_aktual']) <=> strtotime($b['waktu_mulai_aktual']);
-        });
         helper('session_status');
-
+        
         // In your listSesi method, replace the status calculation with:
         foreach ($sesi_list_raw as $sesi) {
             $sesi['status_final'] = calculate_session_status(
@@ -303,7 +296,10 @@ class MahasiswaController extends BaseController
             
             $sesi_list_processed[] = $sesi;
         }
-
+        usort($sesi_list_processed, function($a, $b) {
+            return strtotime($b['waktu_mulai_aktual']) <=> strtotime($a['waktu_mulai_aktual']);
+        });
+        
         $data = [
             'title'     => 'Daftar Sesi',
             'kelas'     => $kelas,
