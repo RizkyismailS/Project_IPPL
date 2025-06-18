@@ -64,7 +64,48 @@
                 </ul>
             </div>
         </div>
+        <div class="col-md-12 mt-4">
+            <div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div><i class="fas fa-history me-1"></i> Recent Activity</div>
+            <a href="<?= base_url('admin/logs') ?>" class="btn btn-sm btn-primary">View All Logs</a>
+        </div>
     </div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($recent_logs)): ?>
+                    <?php foreach ($recent_logs as $log): ?>
+                        <tr>
+                            <td><?= date('H:i:s', strtotime($log['created_at'])) ?></td>
+                            <td><?= esc($log['reference_id']) ?></td>
+                            <td><?= ucfirst(esc($log['role'])) ?></td>
+                            <td><?= str_replace('_', ' ', ucwords(esc($log['action']))) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="4" class="text-center">No recent activity</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+        </div>
+    </div>
+
+    
 </div>
 
 <?= $this->endSection() ?>
