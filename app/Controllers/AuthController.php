@@ -93,7 +93,6 @@ class AuthController extends BaseController
 
             if ($user['role'] === 'admin') {
                 log_message('info', 'AUTH_LOGIN: Redirecting admin ke admin/dashboard');
-                return view('admin/dashboard'); // <---- belum ditentukan, ganti dengan view admin/dashboard jika ada
                 return redirect()->to(base_url('admin/dashboard'))->with('success', 'Login berhasil!');
             } elseif ($user['role'] === 'dosen') {
                 log_message('info', 'AUTH_LOGIN: Redirecting dosen ke dosen/dashboard');
