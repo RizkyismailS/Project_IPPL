@@ -30,14 +30,14 @@ class MataKuliahModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'kode_matakuliah' => 'required|alpha_numeric|max_length[15]|is_unique[matakuliah.kode_matakuliah,kode_matakuliah,{kode_matakuliah}]',
+        'kode_matakuliah' => 'required|alpha_numeric|max_length[15]|is_unique[matakuliah.kode_matakuliah]',
         'nama_matakuliah' => 'required|string|max_length[100]',
         'sks'             => 'permit_empty|integer|greater_than_equal_to[0]',
     ];
     protected $validationMessages = [
         'kode_matakuliah' => [
             'required'          => 'Kode mata kuliah wajib diisi.',
-            'alpha_numeric_dash'=> 'Kode mata kuliah hanya boleh berisi huruf, angka, underscore, atau dash.',
+            'alpha_numeric'     => 'Kode mata kuliah hanya boleh berisi huruf dan angka.',
             'max_length'        => 'Kode mata kuliah maksimal 15 karakter.',
             'is_unique'         => 'Kode mata kuliah ini sudah ada. Silakan gunakan kode lain.'
         ],

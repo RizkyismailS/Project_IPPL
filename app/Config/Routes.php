@@ -31,12 +31,12 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->get('dosen/activate/(:segment)', 'AdminController::activateDosen/$1');
     $routes->get('dosen/deactivate/(:segment)', 'AdminController::deactivateDosen/$1');
     $routes->get('sesi', 'AdminController::listSesi');
-    $routes->get('matakuliah', 'MataKuliah::index');
-    $routes->get('matakuliah/create', 'MataKuliahController::create');
-    $routes->post('matakuliah/store', 'MataKuliahController::store');
-    $routes->get('matakuliah/edit/(:segment)', 'MataKuliahController::edit/$1');
-    $routes->post('matakuliah/update/(:segment)', 'MataKuliahController::update/$1');
-    $routes->post('matakuliah/delete/(:segment)', 'MataKuliahController::delete/$1');
+    $routes->get('matakuliah', 'MatakuliahController::index');
+    $routes->get('matakuliah/create', 'MatakuliahController::create');
+    $routes->post('matakuliah/store', 'MatakuliahController::store');
+    $routes->get('matakuliah/edit/(:segment)', 'MatakuliahController::edit/$1');
+    $routes->post('matakuliah/update/(:segment)', 'MatakuliahController::update/$1');
+    $routes->post('matakuliah/delete/(:segment)', 'MatakuliahController::delete/$1');
 });
 
 // Dosen Routes (Gunakan grup dengan filter)

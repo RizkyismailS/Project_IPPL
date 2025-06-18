@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Admin;
+namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MataKuliahModel;
@@ -41,7 +41,7 @@ class MatakuliahController extends BaseController
         $this->mataKuliahModel->save([
             'kode_matakuliah' => $this->request->getPost('kode_matakuliah'),
             'nama_matakuliah' => $this->request->getPost('nama_matakuliah'),
-            'sks'             => $this->request->getPost('sks'),
+            'sks' => $this->request->getPost('sks'),
         ]);
 
         return redirect()->to('/admin/matakuliah')->with('success', 'Mata kuliah berhasil ditambahkan.');
@@ -63,18 +63,45 @@ class MatakuliahController extends BaseController
 
     public function update($kode)
     {
-        $rules = $this->mataKuliahModel->getValidationRules();
-        // Remove is_unique for kode_matakuliah on update
-        unset($rules['kode_matakuliah']);
+        // If the kode_matakuliah is not changed, we don't need to check uniqueness
+        if ($this->request->getPost('kode_matakuliah') !== $kode) {
+            // If kode is being changed, we need to validate it's unique
+            if (
+                !$this->validate([
+                    'kode_matakuliah' => 'required|alpha_numeric|max_length[15]|is_unique[matakuliah.kode_matakuliah]',
+                    'nama_matakuliah' => 'required|string|max_length[100]',
+                    'sks' => 'permit_empty|integer|greater_than_equal_to[0]',
+                ])
+            ) {
+                return redirect()->back()->withInput()->with('validation', $this->validator);
+            }
 
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('validation', $this->validator);
+            // Update with new kode
+            $data = [
+                'kode_matakuliah' => $this->request->getPost('kode_matakuliah'),
+                'nama_matakuliah' => $this->request->getPost('nama_matakuliah'),
+                'sks' => $this->request->getPost('sks'),
+            ];
+
+            $this->mataKuliahModel->delete($kode); // Remove old record
+            $this->mataKuliahModel->insert($data); // Insert new record
+        } else {
+            // Kode not changed, just validate other fields
+            if (
+                !$this->validate([
+                    'nama_matakuliah' => 'required|string|max_length[100]',
+                    'sks' => 'permit_empty|integer|greater_than_equal_to[0]',
+                ])
+            ) {
+                return redirect()->back()->withInput()->with('validation', $this->validator);
+            }
+
+            // Update without changing kode
+            $this->mataKuliahModel->update($kode, [
+                'nama_matakuliah' => $this->request->getPost('nama_matakuliah'),
+                'sks' => $this->request->getPost('sks'),
+            ]);
         }
-
-        $this->mataKuliahModel->update($kode, [
-            'nama_matakuliah' => $this->request->getPost('nama_matakuliah'),
-            'sks'             => $this->request->getPost('sks'),
-        ]);
 
         return redirect()->to('/admin/matakuliah')->with('success', 'Mata kuliah berhasil diupdate.');
     }
