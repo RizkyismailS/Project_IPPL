@@ -5,7 +5,7 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/hello', function() {
+$routes->get('/hello', function () {
     return 'Hello from Laragon CI4!';
 });
 
@@ -25,7 +25,7 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->get('dosen/create', 'AdminController::createUserDosenForm'); // Form
     $routes->post('dosen/store', 'AdminController::storeUserDosen'); // Proses simpan
     $routes->get('dosen/list', 'AdminController::listDosen');
-    $routes->get('dosen/edit/(:segment)', 'AdminController::editDosenForm/$1');   
+    $routes->get('dosen/edit/(:segment)', 'AdminController::editDosenForm/$1');
     $routes->put('dosen/update/(:segment)', 'AdminController::updateDosen/$1');
     $routes->post('dosen/delete/(:segment)', 'AdminController::deleteDosen/$1'); // Menggunakan POST
     $routes->get('dosen/activate/(:segment)', 'AdminController::activateDosen/$1');
@@ -37,6 +37,8 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->get('matakuliah/edit/(:segment)', 'MatakuliahController::edit/$1');
     $routes->post('matakuliah/update/(:segment)', 'MatakuliahController::update/$1');
     $routes->post('matakuliah/delete/(:segment)', 'MatakuliahController::delete/$1');
+    $routes->get('logs', 'LogController::index');
+    $routes->get('logs/user/(:num)', 'LogController::userLogs/$1');
 });
 
 // Dosen Routes (Gunakan grup dengan filter)
@@ -57,6 +59,7 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
     $routes->post('sesi-absensi/update/(:num)', 'SesiAbsensiController::update/$1');
     $routes->get('list-sesi/(:segment)', 'DosenController::listSesi/$1');
     $routes->get('laporan-sesi/(:num)', 'DosenController::laporanSesi/$1');
+    $routes->get('logs', 'LogController::userLogs');
 });
 
 // Mahasiswa Routes (Gunakan grup dengan filter)
@@ -69,4 +72,6 @@ $routes->group('mahasiswa', ['filter' => 'mahasiswaAuthFilter'], static function
     $routes->get('kelas', 'MahasiswaController::listKelas');
     $routes->get('sesi/(:segment)', 'MahasiswaController::listSesi/$1');
     $routes->post('submitAbsensi', 'MahasiswaController::submitAbsensi');
+    $routes->get('logs', 'LogController::userLogs');
+
 });
