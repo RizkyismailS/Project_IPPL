@@ -28,14 +28,14 @@
                     </a>
                 </li>
 
-                <li class="sidebar-item">
+                <li class="sidebar-item <?= (uri_string() == 'admin/dosen/list') ? 'active' : '' ?>">
                     <a href="/admin/dosen/list" class="sidebar-link">
                         <i class="bi bi-person-fill"></i>
                         <span>Manage Dosen</span>
                     </a>
                 </li>
 
-                <li class="sidebar-item">
+                <li class="sidebar-item <?= (uri_string() == 'admin/manage_mhs') ? 'active' : '' ?>">
                     <a href="/admin/manage_mhs" class="sidebar-link">
                         <i class="bi bi-book-fill"></i>
                         <span>Manage Mahasiswa</span>
@@ -49,7 +49,7 @@
                     </a>
                 </li>
 
-                <li class="sidebar-item <?= (uri_string() == 'admin/sesi') ? 'active' : '' ?>">
+                <li class="sidebar-item <?= (uri_string() == 'admin/matakuliah') ? 'active' : '' ?>">
                     <a href="/admin/matakuliah" class='sidebar-link'>
                         <i class="bi bi-card-checklist"></i>
                         <span>Manajemen Mata kuliah</span>
