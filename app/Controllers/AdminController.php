@@ -593,14 +593,37 @@ class AdminController extends BaseController
         // Inisialisasi model
         $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
 
-        // Mengambil data menggunakan metode yang sudah dibuat dan menambahkan pagination
+        // Get the current page from request
+        $page = $this->request->getVar('page_sesi_group') ?? 1;
+
+        // Fetch all results using get()->getResultArray() instead of findAll()
+        $allSesiData = $sesiAbsensiModel->getAllSesiWithDetails()->get()->getResultArray();
+
+        // Set up pagination manually
+        $perPage = 10;
+        $totalItems = count($allSesiData);
+        $totalPages = ceil($totalItems / $perPage);
+
+        // Calculate offset for current page
+        $offset = ($page - 1) * $perPage;
+
+        // Get only the items for current page
+        $currentPageItems = array_slice($allSesiData, $offset, $perPage);
+
+        // Create a custom pager
+        $pager = service('pager');
+        $pager->setPath('admin/sesi');  // Set the path for pagination links
+        $pager->makeLinks($page, $perPage, $totalItems, 'default_full', 1, 'sesi_group');
+
         $data = [
             'title' => 'Manajemen Sesi Absensi',
-            'sesi' => $sesiAbsensiModel->getAllSesiWithDetails()->paginate(10, 'sesi_group'), // 10 data per halaman
-            'pager' => $sesiAbsensiModel->pager,
+            'sesi' => $currentPageItems,
+            'pager' => $pager,
+            'currentPage' => $page,
+            'totalPages' => $totalPages
         ];
 
-        // Memuat view baru yang akan kita buat
+        // Memuat view
         return view('admin/list_semua_sesi', $data);
     }
 }
