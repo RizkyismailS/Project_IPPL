@@ -44,6 +44,9 @@ class AdminController extends BaseController
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Akses ditolak. Hanya admin.']);
         }
 
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $recentLogs = $activityLogModel->getActivityLogs(5);
+
         $total_dosen = $this->dosenModel->countAll() ?? 0;
         $total_mahasiswa = $this->mahasiswaModel->countAll() ?? 0;
         $total_kelas_aktif = $this->kelasModel->countAllResults() ?? 0;
@@ -72,6 +75,8 @@ class AdminController extends BaseController
             'aktifitas_sesi' => $aktifitas_sesi,
             'title' => 'Admin Dashboard',
             'nama_user' => $this->session->get('nama_lengkap') ?? $this->session->get('username'),
+            'recent_logs' => $recentLogs,
+
         ];
 
         return view('admin/dashboard', $data);

@@ -29,7 +29,7 @@ class SesiAbsensiController extends BaseController
             'kelas' => $kelas,
             'validation' => \Config\Services::validation()
         ];
-        
+
         return view('dosen/create_absensi', $data);
     }
 
@@ -49,7 +49,7 @@ class SesiAbsensiController extends BaseController
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('validation', $this->validator);
         }
-        
+
         // ... (Security check biarkan sama)
         $kelas = $this->kelasModel->find($kode_kelas);
         if (!$kelas || $kelas['dosen_nip'] !== session()->get('reference_id')) {
@@ -72,7 +72,17 @@ class SesiAbsensiController extends BaseController
         ];
 
         $this->sesiAbsensiModel->save($dataToSave);
-
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $sessionId = $this->sesiAbsensiModel->getInsertID();
+        $activityLogModel->logActivity(
+            session()->get('id_user'),
+            session()->get('reference_id'),
+            'dosen',
+            'create_absensi_session',
+            'Created new absensi session for class ' . $kode_kelas . ': ' . $this->request->getPost('topik_perkuliahan'),
+            'sesi_absensi',
+            $sessionId
+        );
         return redirect()->to('dosen/kelas/detail/' . $kode_kelas)->with('success', 'Sesi absensi baru berhasil dibuat.');
     }
 
@@ -124,7 +134,7 @@ class SesiAbsensiController extends BaseController
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('validation', $this->validator);
         }
-        
+
         // Security check (selalu lakukan untuk aksi yang mengubah data)
         $sesi = $this->sesiAbsensiModel->find($id_sesi);
         $kelas = $this->kelasModel->find($sesi['kode_kelas']);
@@ -146,7 +156,16 @@ class SesiAbsensiController extends BaseController
         ];
 
         $this->sesiAbsensiModel->update($id_sesi, $dataToUpdate);
-
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $activityLogModel->logActivity(
+            session()->get('id_user'),
+            session()->get('reference_id'),
+            'dosen',
+            'update_absensi_session',
+            'Updated absensi session ID ' . $id_sesi,
+            'sesi_absensi',
+            $id_sesi
+        );
         return redirect()->to('dosen/kelas/detail/' . $sesi['kode_kelas'])->with('success', 'Sesi absensi berhasil diperbarui.');
     }
 }

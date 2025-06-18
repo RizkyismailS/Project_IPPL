@@ -156,6 +156,20 @@ class MahasiswaController extends BaseController
         try {
             if ($this->enrollmentModel->insert($enrollmentData)) {
                 log_message('info', "Student NIM '{$nimMahasiswa}' successfully enrolled in class '{$kodeKelas}'.");
+
+                // Log activity
+                $activityLogModel = new \App\Models\ActivityLogModel();
+                $enrollmentId = $this->enrollmentModel->getInsertID();
+                $activityLogModel->logActivity(
+                    session()->get('id_user'),
+                    $nimMahasiswa,
+                    'mahasiswa',
+                    'enroll_class',
+                    'Enrolled in class ' . $kodeKelas,
+                    'enrollment',
+                    $enrollmentId
+                );
+
                 return redirect()->to(base_url('mahasiswa/dashboard'))
                     ->with('success', 'You have successfully enrolled in class "' . esc($kelas['nama_kelas']) . '"!');
             } else {
@@ -247,6 +261,20 @@ class MahasiswaController extends BaseController
             ];
 
             $message = $statusMessages[$status_absen] ?? 'Absensi Anda berhasil dicatat!';
+
+            // Log activity
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $attendanceId = $kehadiranModel->getInsertID();
+            $activityLogModel->logActivity(
+                session()->get('id_user'),
+                $nim,
+                'mahasiswa',
+                'submit_attendance',
+                'Submitted ' . $status_absen . ' attendance for session ' . $id_sesi,
+                'kehadiran',
+                $attendanceId
+            );
+
             return redirect()->to('/mahasiswa/dashboard')->with('success', $message);
         } else {
             return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');

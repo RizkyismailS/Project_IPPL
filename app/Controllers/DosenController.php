@@ -5,8 +5,8 @@ namespace App\Controllers;
 use App\Models\DosenModel;
 use App\Models\KelasModel;
 use App\Models\MataKuliahModel;
-use App\Models\EnrollmentModel; 
-use App\Models\SesiAbsensiModel; 
+use App\Models\EnrollmentModel;
+use App\Models\SesiAbsensiModel;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use App\Libraries\RuleExist;
 
@@ -16,7 +16,7 @@ class DosenController extends BaseController
     protected $dosenModel;
     protected $kelasModel;
     protected $mataKuliahModel;
-    protected $enrollmentModel; 
+    protected $enrollmentModel;
     protected $sesiAbsensiModel;
     protected $session;
 
@@ -32,16 +32,19 @@ class DosenController extends BaseController
         // PENTING: Terapkan DosenAuthFilter melalui Routes
     }
 
-    
-    private function validateMatakuliah($kode_matakuliah) {
+
+    private function validateMatakuliah($kode_matakuliah)
+    {
         return $this->mataKuliahModel->find($kode_matakuliah) !== null;
     }
 
-    private function validateTimeFormat($time) {
+    private function validateTimeFormat($time)
+    {
         return preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $time);
     }
 
-    private function validateTimeSequence($start, $end) {
+    private function validateTimeSequence($start, $end)
+    {
         return strtotime($end) > strtotime($start);
     }
 
@@ -49,26 +52,26 @@ class DosenController extends BaseController
     {
         $dosenNip = $this->session->get('reference_id');
         $db = \Config\Database::connect();
-        
+
         // Get basic statistics
         $totalKelas = $this->kelasModel->where('dosen_nip', $dosenNip)->countAllResults();
-        
+
         // Get total students across all classes
         $totalMahasiswaQuery = $db->query("
             SELECT COUNT(DISTINCT e.nim_mahasiswa) as total 
             FROM enrollment e 
             JOIN kelas k ON e.kode_kelas_enrolled = k.kode_kelas 
-            WHERE k.dosen_nip = ? AND e.status_enrollment = 'aktif'", 
+            WHERE k.dosen_nip = ? AND e.status_enrollment = 'aktif'",
             [$dosenNip]
         );
         $totalMahasiswa = $totalMahasiswaQuery->getRow()->total ?? 0;
-        
+
         // Get total absensi sessions
         $totalAbsensi = $this->sesiAbsensiModel
             ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
             ->where('kelas.dosen_nip', $dosenNip)
             ->countAllResults();
-        
+
         // Get weekly attendance data (last 5 weeks)
         $weeklyAbsensiData = $db->query("
             SELECT 
@@ -83,10 +86,10 @@ class DosenController extends BaseController
             WHERE kl.dosen_nip = ? 
             AND sa.tanggal_sesi >= DATE_SUB(CURRENT_DATE(), INTERVAL 5 WEEK)
             GROUP BY WEEK(sa.tanggal_sesi)
-            ORDER BY week_number ASC", 
+            ORDER BY week_number ASC",
             [$dosenNip]
         )->getResultArray();
-        
+
         // Get class-specific attendance data
         $kelasAbsensiData = $db->query("
             SELECT 
@@ -105,10 +108,10 @@ class DosenController extends BaseController
             WHERE kl.dosen_nip = ?
             GROUP BY kl.kode_kelas, kl.nama_kelas, mk.nama_matakuliah
             ORDER BY last_session DESC
-            LIMIT 5", 
+            LIMIT 5",
             [$dosenNip]
         )->getResultArray();
-        
+
         // Get overall attendance status distribution
         $attendanceDistribution = $db->query("
             SELECT 
@@ -118,23 +121,23 @@ class DosenController extends BaseController
             JOIN sesi_absensi sa ON k.id_sesi = sa.id_sesi
             JOIN kelas kl ON sa.kode_kelas = kl.kode_kelas
             WHERE kl.dosen_nip = ?
-            GROUP BY k.status_absen", 
+            GROUP BY k.status_absen",
             [$dosenNip]
         )->getResultArray();
-        
+
         // Format data for charts
         $weekLabels = [];
         $hadirData = [];
         $absenData = [];
         $izinData = [];
-        
+
         foreach ($weeklyAbsensiData as $week) {
             $weekLabels[] = 'Minggu ' . $week['week_number'];
-            $hadirData[] = (int)$week['total_hadir'];
-            $absenData[] = (int)$week['total_absen'];
-            $izinData[] = (int)$week['total_izin'];
+            $hadirData[] = (int) $week['total_hadir'];
+            $absenData[] = (int) $week['total_absen'];
+            $izinData[] = (int) $week['total_izin'];
         }
-        
+
         // Default values if no data
         if (empty($weekLabels)) {
             $weekLabels = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4', 'Minggu 5'];
@@ -142,29 +145,29 @@ class DosenController extends BaseController
             $absenData = [0, 0, 0, 0, 0];
             $izinData = [0, 0, 0, 0, 0];
         }
-        
+
         // Pie chart data
         $pieLabels = [];
         $pieValues = [];
-        
+
         foreach ($attendanceDistribution as $dist) {
-            $status = match($dist['status_absen']) {
+            $status = match ($dist['status_absen']) {
                 'hadir' => 'Hadir',
                 'tidak_hadir' => 'Tidak Hadir',
                 'izin' => 'Izin',
                 default => ucfirst($dist['status_absen'])
             };
-            
+
             $pieLabels[] = $status;
-            $pieValues[] = (int)$dist['total'];
+            $pieValues[] = (int) $dist['total'];
         }
-        
+
         // Default values if no data
         if (empty($pieLabels)) {
             $pieLabels = ['Hadir', 'Tidak Hadir', 'Izin'];
             $pieValues = [0, 0, 0];
         }
-        
+
         return view('dosen/dashboard', [
             'title' => 'Dashboard Dosen',
             'sidebar' => 'layout/dosen_sidebar',
@@ -194,7 +197,7 @@ class DosenController extends BaseController
 
         $perPage = 10;
         $currentPage = $this->request->getVar('page_kelas_dosen') ? (int) $this->request->getVar('page_kelas_dosen') : 1;
-        
+
         $data['kelas_list'] = $this->kelasModel->getAllKelasWithDetail(
             $perPage,
             'kelas_dosen', // Nama grup pager
@@ -232,19 +235,19 @@ class DosenController extends BaseController
             // Jika tidak, kembalikan ke halaman sebelumnya dengan pesan error
             return redirect()->back()->with('error', 'Anda tidak memiliki akses ke kelas ini.');
         }
-        
+
         // Ambil semua sesi absensi yang berelasi dengan kode_kelas ini
         // Urutkan dari yang terbaru berdasarkan tanggal sesi
         $sesi_data = $sesiAbsensiModel
-                        ->where('kode_kelas', $kode_kelas)
-                        ->orderBy('tanggal_sesi', 'DESC')
-                        ->findAll();
-        
+            ->where('kode_kelas', $kode_kelas)
+            ->orderBy('tanggal_sesi', 'DESC')
+            ->findAll();
+
         // Siapkan data untuk dikirim ke view
         $data = [
-            'title'    => 'List Sesi Absensi',
-            'Absensi'  => $sesi_data, // Nama variabel disesuaikan dengan view Anda ($Absensi)
-            'kelas'    => $kelas,     // Kirim juga data kelas untuk info tambahan jika perlu
+            'title' => 'List Sesi Absensi',
+            'Absensi' => $sesi_data, // Nama variabel disesuaikan dengan view Anda ($Absensi)
+            'kelas' => $kelas,     // Kirim juga data kelas untuk info tambahan jika perlu
         ];
 
         // Muat view 'dosen/listAbsensi' dan kirimkan datanya
@@ -255,19 +258,19 @@ class DosenController extends BaseController
     {
         $data['title'] = "Buat Kelas Baru";
         $data['nama_user'] = $this->session->get('nama_lengkap') ?? $this->session->get('username');
-        
+
         // Ambil daftar mata kuliah untuk dropdown
         $data['mata_kuliah_list'] = $this->mataKuliahModel->orderBy('nama_matakuliah', 'ASC')->findAll();
-        
+
         // Ambil NIP dan nama dosen yang sedang login
         $dosenNipLogin = $this->session->get('reference_id');
         $dosenInfo = $this->dosenModel->find($dosenNipLogin);
-        
+
         $data['dosen_nip_login'] = $dosenNipLogin;
         $data['nama_dosen_login'] = $dosenInfo ? $dosenInfo['nama'] : 'N/A';
 
         // Untuk menampilkan error validasi jika ada redirect dari storeKelas
-        $data['errors'] = session()->getFlashdata('errors'); 
+        $data['errors'] = session()->getFlashdata('errors');
         $data['errors_kelas'] = session()->getFlashdata('errors_kelas');
 
         return view('dosen/kelasBaru', $data); // Mengarahkan ke view form
@@ -290,7 +293,7 @@ class DosenController extends BaseController
         $kode_matakuliah = $this->request->getVar('kode_matakuliah');
         $waktu_mulai = $this->request->getVar('waktu_mulai_kelas');
         $waktu_selesai = $this->request->getVar('waktu_selesai_kelas');
-        
+
         // Modify validation rules to use built-in rules only
         $validationRules = [
             'kode_kelas' => [
@@ -305,7 +308,7 @@ class DosenController extends BaseController
             ],
             'nama_kelas' => ['label' => 'Nama Kelas', 'rules' => 'required|string|max_length[100]'],
             'kode_matakuliah' => [
-                'label' => 'Mata Kuliah', 
+                'label' => 'Mata Kuliah',
                 'rules' => 'required',
                 'errors' => ['required' => '{field} wajib dipilih.']
             ],
@@ -316,12 +319,12 @@ class DosenController extends BaseController
             'tahun_ajaran' => ['label' => 'Tahun Ajaran', 'rules' => 'required|string|max_length[10]'],
             'semester' => ['label' => 'Semester', 'rules' => 'required|string|max_length[20]'],
             'kode_enrollment' => [
-                'label' => 'Kode Enrollment', 
+                'label' => 'Kode Enrollment',
                 'rules' => 'permit_empty|alpha_numeric|max_length[20]|is_unique[kelas.kode_enrollment]',
                 'errors' => ['is_unique' => '{field} ini sudah digunakan.']
             ],
         ];
-        
+
         $validationFailed = false;
         $errors = $this->validator ? $this->validator->getErrors() : [];
 
@@ -343,8 +346,10 @@ class DosenController extends BaseController
         }
 
         // Validate time sequence
-        if ($this->validateTimeFormat($waktu_mulai) && $this->validateTimeFormat($waktu_selesai) && 
-            !$this->validateTimeSequence($waktu_mulai, $waktu_selesai)) {
+        if (
+            $this->validateTimeFormat($waktu_mulai) && $this->validateTimeFormat($waktu_selesai) &&
+            !$this->validateTimeSequence($waktu_mulai, $waktu_selesai)
+        ) {
             $errors['waktu_selesai_kelas'] = 'Waktu Selesai harus setelah Waktu Mulai.';
             $validationFailed = true;
         }
@@ -352,27 +357,27 @@ class DosenController extends BaseController
         // Handle validation failures at once
         if ($validationFailed) {
             return redirect()->to(base_url('dosen/kelas/create'))
-                            ->withInput()
-                            ->with('errors', $errors);
+                ->withInput()
+                ->with('errors', $errors);
         }
 
         $kelasData = [
-            'kode_kelas'        => $this->request->getVar('kode_kelas'),
-            'nama_kelas'        => $this->request->getVar('nama_kelas'),
-            'kode_matakuliah'   => $this->request->getVar('kode_matakuliah'),
-            'dosen_nip'         => $dosenNipLogin,
-            'hari'              => $this->request->getVar('hari'),
+            'kode_kelas' => $this->request->getVar('kode_kelas'),
+            'nama_kelas' => $this->request->getVar('nama_kelas'),
+            'kode_matakuliah' => $this->request->getVar('kode_matakuliah'),
+            'dosen_nip' => $dosenNipLogin,
+            'hari' => $this->request->getVar('hari'),
             'waktu_mulai_kelas' => $this->request->getVar('waktu_mulai_kelas'),
             'waktu_selesai_kelas' => $this->request->getVar('waktu_selesai_kelas'),
-            'ruangan'           => $this->request->getVar('ruangan'),
-            'tahun_ajaran'      => $this->request->getVar('tahun_ajaran'),
-            'semester'          => $this->request->getVar('semester'),
-            'kode_enrollment'   => $this->request->getVar('kode_enrollment'),
+            'ruangan' => $this->request->getVar('ruangan'),
+            'tahun_ajaran' => $this->request->getVar('tahun_ajaran'),
+            'semester' => $this->request->getVar('semester'),
+            'kode_enrollment' => $this->request->getVar('kode_enrollment'),
         ];
 
         if (empty($kelasData['kode_enrollment'])) {
             $isUnique = false;
-            while(!$isUnique) {
+            while (!$isUnique) {
                 $newEnrollCode = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)); // Generate 8 char random
                 if (!$this->kelasModel->findByKodeEnrollment($newEnrollCode)) {
                     $kelasData['kode_enrollment'] = $newEnrollCode;
@@ -380,7 +385,7 @@ class DosenController extends BaseController
                 }
             }
         }
-        
+
         $db = \Config\Database::connect();
         $db->transBegin();
 
@@ -388,35 +393,52 @@ class DosenController extends BaseController
             if (!$this->kelasModel->insert($kelasData)) {
                 $db->transRollback();
                 log_message('error', '[DosenController] Gagal insert ke kelasModel. Errors: ' . json_encode($this->kelasModel->errors()));
-                if ($wantsJson) { /* ... */ }
+                if ($wantsJson) { /* ... */
+                }
                 return redirect()->to(base_url('dosen/kelas/create'))
-                                 ->withInput()
-                                 ->with('errors_kelas', $this->kelasModel->errors())
-                                 ->with('error', 'Gagal menyimpan data kelas. Periksa error model.');
+                    ->withInput()
+                    ->with('errors_kelas', $this->kelasModel->errors())
+                    ->with('error', 'Gagal menyimpan data kelas. Periksa error model.');
             }
 
             if ($db->transStatus() === false) {
                 $db->transRollback();
                 log_message('error', '[DosenController] Status transaksi DB gagal post-insert kelas.');
-                if ($wantsJson) { /* ... */ }
+                if ($wantsJson) { /* ... */
+                }
                 return redirect()->to(base_url('dosen/kelas/create'))->withInput()->with('error', 'Kesalahan database saat menyimpan.');
             }
 
             $db->transCommit();
             log_message('info', '[DosenController] Kelas baru berhasil dibuat. Kode Kelas: ' . $kelasData['kode_kelas'] . '. Kode Enrollment: ' . $kelasData['kode_enrollment']);
-            if ($wantsJson) { /* ... */ }
+            if ($wantsJson) { /* ... */
+            }
+            // Log activity
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $kelasId = $this->kelasModel->getInsertID();
+            $activityLogModel->logActivity(
+                session()->get('id_user'),
+                $dosenNipLogin,
+                'dosen',
+                'create_class',
+                'Created new class: ' . $kelasData['nama_kelas'],
+                'kelas',
+                $kelasData['kode_kelas']
+            );
             return redirect()->to(base_url('dosen/kelas'))
-                             ->with('success', 'Kelas "' . esc($kelasData['nama_kelas']) . '" dengan kode enrollment "' . esc($kelasData['kode_enrollment']) . '" berhasil ditambahkan.');
+                ->with('success', 'Kelas "' . esc($kelasData['nama_kelas']) . '" dengan kode enrollment "' . esc($kelasData['kode_enrollment']) . '" berhasil ditambahkan.');
 
         } catch (DatabaseException $e) {
             $db->transRollback();
             log_message('error', '[DosenController] DatabaseException: ' . $e->getMessage());
-            if ($wantsJson) { /* ... */ }
+            if ($wantsJson) { /* ... */
+            }
             return redirect()->to(base_url('dosen/kelas/create'))->withInput()->with('error', 'Kesalahan database.');
         } catch (\Exception $e) {
             $db->transRollback();
             log_message('error', '[DosenController] General Exception: ' . $e->getMessage());
-            if ($wantsJson) { /* ... */ }
+            if ($wantsJson) { /* ... */
+            }
             return redirect()->to(base_url('dosen/kelas/create'))->withInput()->with('error', 'Kesalahan tidak terduga.');
         }
     }
@@ -428,30 +450,30 @@ class DosenController extends BaseController
     public function updateSessionStatuses()
     {
         $now = date('Y-m-d H:i:s');
-        
+
         // Update sessions that have passed their end time to 'selesai'
         $this->sesiAbsensiModel->where('status', 'aktif')
-                            ->where('waktu_selesai_aktual <', $now)
-                            ->set(['status' => 'selesai'])
-                            ->update();
-        
+            ->where('waktu_selesai_aktual <', $now)
+            ->set(['status' => 'selesai'])
+            ->update();
+
         // Update sessions that have passed their scheduled time but weren't activated to 'terlewat'
         // The NOT EXISTS subquery needs to be properly formatted
         $subquery = $this->sesiAbsensiModel->db->table('kehadiran')
-                ->select('1')
-                ->where('kehadiran.id_sesi = sesi_absensi.id_sesi');
-                
+            ->select('1')
+            ->where('kehadiran.id_sesi = sesi_absensi.id_sesi');
+
         $this->sesiAbsensiModel->where('status', 'aktif')
-                            ->where('waktu_mulai_aktual <', $now)
-                            ->where('waktu_selesai_aktual <', $now)
-                            ->where("NOT EXISTS ({$subquery->getCompiledSelect()})", null, false)
-                            ->set(['status' => 'terlewat'])
-                            ->update();
-                            
+            ->where('waktu_mulai_aktual <', $now)
+            ->where('waktu_selesai_aktual <', $now)
+            ->where("NOT EXISTS ({$subquery->getCompiledSelect()})", null, false)
+            ->set(['status' => 'terlewat'])
+            ->update();
+
         return true;
     }
 
-    
+
     /**
      * Menampilkan detail kelas yang diajar oleh dosen.
      * Dosen hanya bisa melihat detail kelas yang memang dia ampu.
@@ -462,14 +484,14 @@ class DosenController extends BaseController
         $this->updateSessionStatuses();
         // --- Langkah Keamanan ---
         $nip_dosen = $this->session->get('reference_id');
-        
+
         // Gunakan getKelasDetail untuk mendapatkan data lengkap dengan join ke mata kuliah dan dosen
         $kelas = $this->kelasModel->getKelasDetail($kodeKelas);
-        
+
         if (!$kelas || $kelas['dosen_nip'] != $nip_dosen) {
             return redirect()->to('/dosen/kelas')->with('error', 'Anda tidak memiliki akses ke kelas ini.');
         }
-        
+
         // --- Mempersiapkan Data Sesi ---
         // 1. Ambil data sesi mentah dari database
         $sesi_absensi_raw = $this->sesiAbsensiModel->where('kode_kelas', $kodeKelas)->orderBy('tanggal_sesi', 'DESC')->findAll();
@@ -484,15 +506,15 @@ class DosenController extends BaseController
             $sesi['status_tampil'] = calculate_session_status($sesi, null, 'dosen');
             $sesi_absensi_processed[] = $sesi;
         }
-        
+
         // Get mahasiswa data from enrollment
         $mahasiswa_terdaftar = $this->enrollmentModel->getMahasiswaByKelas($kodeKelas);
         $jumlah_mahasiswa_terdaftar = count($mahasiswa_terdaftar);
 
         // Siapkan semua data untuk dikirim ke view
         $data = [
-            'title'        => 'Detail Kelas',
-            'kelas'        => $kelas,
+            'title' => 'Detail Kelas',
+            'kelas' => $kelas,
             'mahasiswa_terdaftar' => $mahasiswa_terdaftar,
             'jumlah_mahasiswa_terdaftar' => $jumlah_mahasiswa_terdaftar,
             'sesi_absensi' => $sesi_absensi_processed, // Mengirim data sesi yang sudah diproses
@@ -509,7 +531,7 @@ class DosenController extends BaseController
         $enrollmentId = $this->request->getPost('id_enrollment');
         $action = $this->request->getPost('action');
         $dosenNipLogin = $this->session->get('reference_id');
-        
+
         // Validate inputs
         if (empty($enrollmentId) || empty($action)) {
             log_message('error', '[DosenController] manageEnrollment: Missing required parameters');
@@ -523,7 +545,7 @@ class DosenController extends BaseController
         }
 
         $enrollmentModel = new EnrollmentModel();
-        
+
         // Get enrollment data
         $enrollment = $enrollmentModel->find($enrollmentId);
         if (!$enrollment) {
@@ -540,7 +562,7 @@ class DosenController extends BaseController
             log_message('error', '[DosenController] Class not found: ' . $enrollment['kode_kelas_enrolled']);
             return redirect()->back()->with('error', 'Data kelas tidak ditemukan.');
         }
-        
+
         // Check if dosen owns this class
         if ($kelas['dosen_nip'] !== $dosenNipLogin) {
             log_message('warning', "[DosenController] Unauthorized access: Dosen $dosenNipLogin tried to manage enrollment for class owned by {$kelas['dosen_nip']}");
@@ -549,36 +571,36 @@ class DosenController extends BaseController
 
         // Prepare update data based on action
         $newStatus = ($action === 'activate') ? 'aktif' : 'dinonaktifkan';
-        
+
         // Use transaction for better data integrity
         $db = \Config\Database::connect();
         $db->transBegin();
-        
+
         try {
             // Update the enrollment status and check result
             $updated = $enrollmentModel->update($enrollmentId, ['status_enrollment' => $newStatus]);
-            
+
             if ($updated === false) {
                 $db->transRollback();
                 log_message('error', "[DosenController] Failed to update enrollment status: " . json_encode($enrollmentModel->errors()));
                 return redirect()->back()->with('error', 'Gagal mengubah status pendaftaran.');
             }
-            
+
             if ($db->transStatus() === false) {
                 $db->transRollback();
                 log_message('error', '[DosenController] Database transaction status failed during enrollment update');
                 return redirect()->back()->with('error', 'Kesalahan database saat memperbarui status.');
             }
-            
+
             $db->transCommit();
             log_message('debug', "[DosenController] Enrollment ID: $enrollmentId successfully updated to status: $newStatus");
-            
-            $message = ($action === 'activate') ? 
-                'Status mahasiswa berhasil diaktifkan kembali.' : 
+
+            $message = ($action === 'activate') ?
+                'Status mahasiswa berhasil diaktifkan kembali.' :
                 'Status mahasiswa berhasil dinonaktifkan.';
-                
+
             return redirect()->back()->with('success', $message);
-        
+
         } catch (\Exception $e) {
             $db->transRollback();
             log_message('error', '[DosenController] Exception during enrollment update: ' . $e->getMessage());
@@ -621,13 +643,13 @@ class DosenController extends BaseController
 
         // Ambil daftar mata kuliah untuk dropdown
         $data['mata_kuliah_list'] = $this->mataKuliahModel->orderBy('nama_matakuliah', 'ASC')->findAll();
-        
+
         // Ambil NIP dan nama dosen yang sedang login (untuk ditampilkan, meskipun NIP dosen_nip di kelas tidak diubah)
         $data['dosen_nip_login'] = $dosenNipLogin;
         $data['nama_dosen_login'] = $this->session->get('nama_lengkap') ?? $this->session->get('username'); // Bisa juga diambil dari DosenModel
 
         // Untuk menampilkan error validasi jika ada redirect dari proses update yang gagal
-        $data['errors'] = session()->getFlashdata('errors'); 
+        $data['errors'] = session()->getFlashdata('errors');
         $data['errors_kelas_update'] = session()->getFlashdata('errors_kelas_update'); // Flashdata khusus untuk error update
 
         return view('dosen/kelas_edit', $data); // Mengarahkan ke view form edit
@@ -684,57 +706,59 @@ class DosenController extends BaseController
 
         // Perform validation
         $validationRules = $this->getUpdateKelasValidationRules($kodeKelas);
-        
+
         // Combined validation approach
         if (!$this->validate($validationRules)) {
             $errors = $this->validator->getErrors();
-            
+
             // Custom validations
             $validationFailed = false;
-            
+
             // Validate matakuliah
             if (!$this->validateMatakuliah($kode_matakuliah)) {
                 $errors['kode_matakuliah'] = 'Mata Kuliah yang dipilih tidak valid.';
                 $validationFailed = true;
             }
-            
+
             // Validate time formats
             if (!$this->validateTimeFormat($waktu_mulai)) {
                 $errors['waktu_mulai_kelas'] = 'Format Waktu Mulai tidak valid.';
                 $validationFailed = true;
             }
-            
+
             if (!$this->validateTimeFormat($waktu_selesai)) {
                 $errors['waktu_selesai_kelas'] = 'Format Waktu Selesai tidak valid.';
                 $validationFailed = true;
             }
-            
+
             // Validate time sequence
-            if ($this->validateTimeFormat($waktu_mulai) && $this->validateTimeFormat($waktu_selesai) && 
-                !$this->validateTimeSequence($waktu_mulai, $waktu_selesai)) {
+            if (
+                $this->validateTimeFormat($waktu_mulai) && $this->validateTimeFormat($waktu_selesai) &&
+                !$this->validateTimeSequence($waktu_mulai, $waktu_selesai)
+            ) {
                 $errors['waktu_selesai_kelas'] = 'Waktu Selesai harus setelah Waktu Mulai.';
                 $validationFailed = true;
             }
-            
+
             if ($validationFailed || count($errors) > 0) {
-                log_message('error', '[DosenController] Validasi update kelas gagal. Kode Kelas: '.$kodeKelas.'. Errors: ' . json_encode($errors));
-                
+                log_message('error', '[DosenController] Validasi update kelas gagal. Kode Kelas: ' . $kodeKelas . '. Errors: ' . json_encode($errors));
+
                 if ($wantsJson) {
                     return $this->response->setStatusCode(400)->setJSON([
                         'status' => 'validation_error',
                         'errors' => $errors
                     ]);
                 }
-                
+
                 return redirect()->to(base_url('dosen/kelas/edit/' . $kodeKelas))
-                                ->withInput()
-                                ->with('errors', $errors);
+                    ->withInput()
+                    ->with('errors', $errors);
             }
         }
 
         // Prepare update data
         $updateData = $this->prepareKelasUpdateData();
-        
+
         // Handle kode_enrollment special case
         $this->handleKodeEnrollmentUpdate($updateData, $kelasToUpdate);
 
@@ -745,8 +769,8 @@ class DosenController extends BaseController
         try {
             if (!$this->kelasModel->update($kodeKelas, $updateData)) {
                 $db->transRollback();
-                log_message('error', '[DosenController] Gagal update ke kelasModel. Kode Kelas: '.$kodeKelas.'. Errors: ' . json_encode($this->kelasModel->errors()));
-                
+                log_message('error', '[DosenController] Gagal update ke kelasModel. Kode Kelas: ' . $kodeKelas . '. Errors: ' . json_encode($this->kelasModel->errors()));
+
                 return $this->errorResponse(
                     'Gagal mengupdate data kelas. Periksa kembali input Anda.',
                     400,
@@ -770,16 +794,16 @@ class DosenController extends BaseController
 
             $db->transCommit();
             log_message('info', '[DosenController] Kelas berhasil diupdate. Kode Kelas: ' . $kodeKelas);
-            
+
             if ($wantsJson) {
                 return $this->response->setJSON([
                     'status' => 'success',
                     'message' => 'Kelas berhasil diupdate.'
                 ]);
             }
-            
+
             return redirect()->to(base_url('dosen/kelas/detail/' . $kodeKelas))
-                            ->with('success', 'Kelas "' . esc($updateData['nama_kelas']) . '" berhasil diupdate.');
+                ->with('success', 'Kelas "' . esc($updateData['nama_kelas']) . '" berhasil diupdate.');
 
         } catch (DatabaseException $e) {
             return $this->handleException($e, $db, $kodeKelas, 'DatabaseException', $wantsJson);
@@ -791,15 +815,15 @@ class DosenController extends BaseController
     private function getUpdateKelasValidationRules(string $kodeKelas): array
     {
         return [
-            'nama_kelas'        => ['label' => 'Nama Kelas', 'rules' => 'required|string|max_length[100]'],
-            'kode_matakuliah'   => ['label' => 'Mata Kuliah', 'rules' => 'required'],
-            'hari'              => ['label' => 'Hari', 'rules' => 'required|in_list[Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu]'],
+            'nama_kelas' => ['label' => 'Nama Kelas', 'rules' => 'required|string|max_length[100]'],
+            'kode_matakuliah' => ['label' => 'Mata Kuliah', 'rules' => 'required'],
+            'hari' => ['label' => 'Hari', 'rules' => 'required|in_list[Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu]'],
             'waktu_mulai_kelas' => ['label' => 'Waktu Mulai', 'rules' => 'required'],
             'waktu_selesai_kelas' => ['label' => 'Waktu Selesai', 'rules' => 'required'],
-            'ruangan'           => ['label' => 'Ruangan', 'rules' => 'permit_empty|string|max_length[50]'],
-            'tahun_ajaran'      => ['label' => 'Tahun Ajaran', 'rules' => 'required|string|max_length[10]'],
-            'semester'          => ['label' => 'Semester', 'rules' => 'required|string|max_length[20]'],
-            'kode_enrollment'   => [
+            'ruangan' => ['label' => 'Ruangan', 'rules' => 'permit_empty|string|max_length[50]'],
+            'tahun_ajaran' => ['label' => 'Tahun Ajaran', 'rules' => 'required|string|max_length[10]'],
+            'semester' => ['label' => 'Semester', 'rules' => 'required|string|max_length[20]'],
+            'kode_enrollment' => [
                 'label' => 'Kode Enrollment',
                 'rules' => "permit_empty|alpha_numeric|max_length[100]|is_unique[kelas.kode_enrollment,kode_kelas,{$kodeKelas}]",
                 'errors' => ['{field} ini sudah digunakan oleh kelas lain.']
@@ -810,27 +834,29 @@ class DosenController extends BaseController
     private function handleKodeEnrollmentUpdate(array &$updateData, array $kelasToUpdate): void
     {
         $newKodeEnrollment = $this->request->getVar('kode_enrollment');
-        
+
         // If same as existing, don't update it at all
         if ($newKodeEnrollment === $kelasToUpdate['kode_enrollment']) {
             // Remove from update data to avoid unnecessary validation
             unset($updateData['kode_enrollment']);
             return;
         }
-        
+
         // If empty, set to null
         if (empty($newKodeEnrollment)) {
             $updateData['kode_enrollment'] = null;
             return;
         }
-        
+
         // If new code, check manually for uniqueness
-        if ($this->kelasModel->where('kode_enrollment', $newKodeEnrollment)
-                            ->where('kode_kelas !=', $kelasToUpdate['kode_kelas'])
-                            ->first()) {
+        if (
+            $this->kelasModel->where('kode_enrollment', $newKodeEnrollment)
+                ->where('kode_kelas !=', $kelasToUpdate['kode_kelas'])
+                ->first()
+        ) {
             throw new \Exception('Kode enrollment ini sudah digunakan oleh kelas lain.');
         }
-        
+
         // If we got here, the new code is unique, so set it
         $updateData['kode_enrollment'] = $newKodeEnrollment;
     }
@@ -838,14 +864,14 @@ class DosenController extends BaseController
     private function prepareKelasUpdateData(): array
     {
         return [
-            'nama_kelas'        => $this->request->getVar('nama_kelas'),
-            'kode_matakuliah'   => $this->request->getVar('kode_matakuliah'),
-            'hari'              => $this->request->getVar('hari'),
+            'nama_kelas' => $this->request->getVar('nama_kelas'),
+            'kode_matakuliah' => $this->request->getVar('kode_matakuliah'),
+            'hari' => $this->request->getVar('hari'),
             'waktu_mulai_kelas' => $this->request->getVar('waktu_mulai_kelas'),
             'waktu_selesai_kelas' => $this->request->getVar('waktu_selesai_kelas'),
-            'ruangan'           => $this->request->getVar('ruangan'),
-            'tahun_ajaran'      => $this->request->getVar('tahun_ajaran'),
-            'semester'          => $this->request->getVar('semester'),
+            'ruangan' => $this->request->getVar('ruangan'),
+            'tahun_ajaran' => $this->request->getVar('tahun_ajaran'),
+            'semester' => $this->request->getVar('semester'),
         ];
     }
 
@@ -853,17 +879,17 @@ class DosenController extends BaseController
     {
         $db->transRollback();
         log_message('error', "[DosenController] $type saat update kelas: $kodeKelas - " . $e->getMessage());
-        
+
         if ($wantsJson) {
             return $this->response->setStatusCode(500)->setJSON([
                 'status' => 'error',
                 'message' => "Terjadi kesalahan $type saat update."
             ]);
         }
-        
+
         return redirect()->to(base_url('dosen/kelas/edit/' . $kodeKelas))
-                        ->withInput()
-                        ->with('error', 'Kesalahan tidak terduga saat update.');
+            ->withInput()
+            ->with('error', 'Kesalahan tidak terduga saat update.');
     }
 
     private function errorResponse(string $redirectMessage, int $statusCode, string $jsonMessage, string $redirectUrl, bool $wantsJson, array $flashData = [])
@@ -874,14 +900,14 @@ class DosenController extends BaseController
                 'message' => $jsonMessage
             ]);
         }
-        
+
         $redirect = redirect()->to(base_url($redirectUrl))->with('error', $redirectMessage);
-        
+
         // Add additional flash data if provided
         foreach ($flashData as $key => $value) {
             $redirect->with($key, $value);
         }
-        
+
         return $redirect;
     }
 
@@ -898,7 +924,8 @@ class DosenController extends BaseController
         if (empty($dosenNipLogin)) {
             // Logika error jika NIP tidak ada di sesi
             log_message('error', '[DosenController] NIP Dosen tidak ada di sesi saat deleteKelas.');
-            if ($wantsJson) { /* ... response JSON 403 ... */ }
+            if ($wantsJson) { /* ... response JSON 403 ... */
+            }
             return redirect()->to(base_url('/'))->with('error', 'Sesi Anda tidak valid.');
         }
 
@@ -907,21 +934,23 @@ class DosenController extends BaseController
 
         if (!$kelasToDelete) {
             log_message('error', "[DosenController] Delete: Kelas dengan kode $kodeKelas tidak ditemukan.");
-            if ($wantsJson) { /* ... response JSON 404 ... */ }
+            if ($wantsJson) { /* ... response JSON 404 ... */
+            }
             return redirect()->to(base_url('dosen/kelas'))->with('error', 'Kelas yang akan dihapus tidak ditemukan.');
         }
 
         // 2. VALIDASI KEPEMILIKAN KELAS
         if ($kelasToDelete['dosen_nip'] !== $dosenNipLogin) {
             log_message('warning', "[DosenController] Delete: Dosen $dosenNipLogin mencoba hapus kelas $kodeKelas yang bukan miliknya.");
-            if ($wantsJson) { /* ... response JSON 403 ... */ }
+            if ($wantsJson) { /* ... response JSON 403 ... */
+            }
             return redirect()->to(base_url('dosen/kelas'))->with('error', 'Anda tidak memiliki hak untuk menghapus kelas ini.');
         }
 
         // 3. PERTIMBANGAN SEBELUM DELETE: Cek data terkait
         // Cek apakah ada mahasiswa yang terdaftar di kelas ini
         $jumlahMahasiswaTerdaftar = $this->enrollmentModel->where('kode_kelas_enrolled', $kodeKelas)->countAllResults();
-        
+
         // Cek apakah ada sesi absensi yang sudah dibuat untuk kelas ini
         $jumlahSesiAbsensi = $this->sesiAbsensiModel->where('kode_kelas', $kodeKelas)->countAllResults();
 
@@ -937,7 +966,7 @@ class DosenController extends BaseController
                 $pesanError .= $jumlahSesiAbsensi . ' sesi absensi';
             }
             $pesanError .= '. Harap hapus data terkait terlebih dahulu atau arsipkan kelas jika memungkinkan.';
-            
+
             log_message('warning', "[DosenController] Delete: Gagal hapus kelas $kodeKelas karena ada data terkait. " . $pesanError);
             if ($wantsJson) {
                 return $this->response->setStatusCode(409)->setJSON(['status' => 'error', 'message' => $pesanError]); // 409 Conflict
@@ -955,19 +984,21 @@ class DosenController extends BaseController
 
             if ($deleted === false) { // delete() mengembalikan false jika gagal karena error atau tidak ada baris yang terpengaruh
                 $db->transRollback();
-                log_message('error', '[DosenController] Gagal delete dari kelasModel. Kode Kelas: '.$kodeKelas.'. Errors: ' . json_encode($this->kelasModel->errors()));
+                log_message('error', '[DosenController] Gagal delete dari kelasModel. Kode Kelas: ' . $kodeKelas . '. Errors: ' . json_encode($this->kelasModel->errors()));
                 $errorMessage = 'Gagal menghapus kelas.';
-                if(!empty($this->kelasModel->errors())) {
+                if (!empty($this->kelasModel->errors())) {
                     $errorMessage .= ' Error: ' . implode(', ', $this->kelasModel->errors());
                 }
-                if ($wantsJson) { /* ... response JSON 400/500 ... */ }
+                if ($wantsJson) { /* ... response JSON 400/500 ... */
+                }
                 return redirect()->to(base_url('dosen/kelas'))->with('error', $errorMessage);
             }
-            
+
             if ($db->transStatus() === false) {
                 $db->transRollback();
                 log_message('error', '[DosenController] Status transaksi database gagal setelah mencoba delete kelas: ' . $kodeKelas);
-                if ($wantsJson) { /* ... response JSON 500 ... */ }
+                if ($wantsJson) { /* ... response JSON 500 ... */
+                }
                 return redirect()->to(base_url('dosen/kelas'))->with('error', 'Kesalahan database saat menghapus.');
             }
 
@@ -980,7 +1011,7 @@ class DosenController extends BaseController
                 ]);
             }
             return redirect()->to(base_url('dosen/kelas'))
-                             ->with('success', 'Kelas "' . esc($kelasToDelete['nama_kelas']) . '" berhasil dihapus.');
+                ->with('success', 'Kelas "' . esc($kelasToDelete['nama_kelas']) . '" berhasil dihapus.');
 
         } catch (DatabaseException $e) {
             $db->transRollback();
@@ -997,15 +1028,15 @@ class DosenController extends BaseController
     protected function requestIsJson(): bool
     {
         return $this->request->isAJAX() ||
-               strpos($this->request->getHeaderLine('Accept'), 'application/json') !== false ||
-               $this->request->getHeaderLine('Content-Type') === 'application/json';
+            strpos($this->request->getHeaderLine('Accept'), 'application/json') !== false ||
+            $this->request->getHeaderLine('Content-Type') === 'application/json';
     }
 
     public function laporanSesi($id_sesi)
     {
         // Inisialisasi model yang dibutuhkan
         $sesiAbsensiModel = new \App\Models\SesiAbsensiModel();
-        
+
         // Ambil info detail sesi untuk ditampilkan di judul halaman
         $sesi = $sesiAbsensiModel->find($id_sesi);
 
@@ -1016,11 +1047,11 @@ class DosenController extends BaseController
 
         // Ambil data laporan dari metode yang baru kita buat
         $laporan = $sesiAbsensiModel->getLaporanKehadiran($id_sesi);
-        
+
         // Kirim data sesi dan data laporan ke view
         $data = [
-            'title'   => 'Laporan Kehadiran',
-            'sesi'    => $sesi,
+            'title' => 'Laporan Kehadiran',
+            'sesi' => $sesi,
             'laporan' => $laporan
         ];
 

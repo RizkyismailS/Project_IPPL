@@ -24,9 +24,12 @@ class AuthController extends BaseController
         // Jika sudah login, redirect ke dashboard masing-masing
         if ($this->session->get('isLoggedIn')) {
             $role = $this->session->get('role');
-            if ($role === 'admin') return redirect()->to(base_url('admin/dashboard'));
-            if ($role === 'dosen') return redirect()->to(base_url('dosen/dashboard'));
-            if ($role === 'mahasiswa') return redirect()->to(base_url('mahasiswa/dashboard'));
+            if ($role === 'admin')
+                return redirect()->to(base_url('admin/dashboard'));
+            if ($role === 'dosen')
+                return redirect()->to(base_url('dosen/dashboard'));
+            if ($role === 'mahasiswa')
+                return redirect()->to(base_url('mahasiswa/dashboard'));
         }
         return view('auth/login'); // Asumsi ada view login di app/Views/auth/login.php
     }
@@ -47,9 +50,9 @@ class AuthController extends BaseController
 
         $user = $this->userModel->getUserByUsername($username);
         if ($user) {
-            log_message('critical', 'LOGIN_VERIFY: Username Input: ' . $username . 
-                                    ', Password Input: ' . $password . // Hati-hati log password plaintext, hanya untuk debug singkat
-                                    ', Hashed PW dari DB: ' . $user['password']);
+            log_message('critical', 'LOGIN_VERIFY: Username Input: ' . $username .
+                ', Password Input: ' . $password . // Hati-hati log password plaintext, hanya untuk debug singkat
+                ', Hashed PW dari DB: ' . $user['password']);
 
             if (password_verify($password, $user['password'])) {
                 log_message('critical', 'LOGIN_VERIFY: password_verify() SUKSES');
@@ -58,10 +61,10 @@ class AuthController extends BaseController
                 log_message('error', 'LOGIN_VERIFY: password_verify() GAGAL');
                 // ...
             }
-            } else {
-                log_message('error', 'LOGIN_VERIFY: User tidak ditemukan: ' . $username);
-                // ...
-            }
+        } else {
+            log_message('error', 'LOGIN_VERIFY: User tidak ditemukan: ' . $username);
+            // ...
+        }
 
         if ($user && password_verify($password, $user['password'])) {
             if (!$user['is_active']) {
@@ -69,13 +72,24 @@ class AuthController extends BaseController
             }
 
             $userData = [
-                'id_user'      => $user['id_user'],
-                'username'     => $user['username'],
-                'role'         => $user['role'],
+                'id_user' => $user['id_user'],
+                'username' => $user['username'],
+                'role' => $user['role'],
                 'reference_id' => $user['reference_id'], // NIM atau NIP
-                'isLoggedIn'   => true,
+                'isLoggedIn' => true,
             ];
-            
+
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity(
+                $user['id_user'],
+                $user['reference_id'],
+                $user['role'],
+                'login',
+                'User logged in successfully',
+                'users',
+                $user['id_user']
+            );
+
             // Ambil nama untuk ditampilkan (dari tabel mahasiswa/dosen)
             if ($user['role'] === 'mahasiswa' && $user['reference_id']) {
                 $mahasiswa = $this->mahasiswaModel->find($user['reference_id']);
@@ -111,48 +125,48 @@ class AuthController extends BaseController
         // 1. Aturan Validasi Langsung di Controller
         // Validasi ini akan memeriksa input dari form sebelum data coba disimpan ke model.
         $validationRules = [
-            'nim'              => [
-                'label'  => 'NIM', // Nama field yang lebih ramah untuk pesan error
-                'rules'  => 'required|alpha_numeric|max_length[20]|is_unique[mahasiswa.nim]|is_unique[users.username]',
+            'nim' => [
+                'label' => 'NIM', // Nama field yang lebih ramah untuk pesan error
+                'rules' => 'required|alpha_numeric|max_length[20]|is_unique[mahasiswa.nim]|is_unique[users.username]',
                 'errors' => [
-                    'required'    => '{field} wajib diisi.',
+                    'required' => '{field} wajib diisi.',
                     'alpha_numeric' => '{field} hanya boleh berisi huruf dan angka.',
-                    'max_length'  => '{field} maksimal 20 karakter.',
-                    'is_unique'   => '{field} ini sudah terdaftar sebagai NIM atau Username. Silakan gunakan NIM lain.'
+                    'max_length' => '{field} maksimal 20 karakter.',
+                    'is_unique' => '{field} ini sudah terdaftar sebagai NIM atau Username. Silakan gunakan NIM lain.'
                 ]
             ],
-            'nama_mahasiswa'   => [
-                'label'  => 'Nama Mahasiswa',
-                'rules'  => 'required|string|max_length[100]',
+            'nama_mahasiswa' => [
+                'label' => 'Nama Mahasiswa',
+                'rules' => 'required|string|max_length[100]',
                 'errors' => [
-                    'required'   => '{field} wajib diisi.',
+                    'required' => '{field} wajib diisi.',
                     'max_length' => '{field} maksimal 100 karakter.'
                 ]
             ],
-            'email_mahasiswa'  => [
-                'label'  => 'Email Mahasiswa',
-                'rules'  => 'required|valid_email|max_length[100]|is_unique[mahasiswa.email]',
+            'email_mahasiswa' => [
+                'label' => 'Email Mahasiswa',
+                'rules' => 'required|valid_email|max_length[100]|is_unique[mahasiswa.email]',
                 'errors' => [
-                    'required'    => '{field} wajib diisi.',
+                    'required' => '{field} wajib diisi.',
                     'valid_email' => '{field} tidak valid.',
-                    'max_length'  => '{field} maksimal 100 karakter.',
-                    'is_unique'   => 'Email ini sudah terdaftar untuk mahasiswa lain.'
+                    'max_length' => '{field} maksimal 100 karakter.',
+                    'is_unique' => 'Email ini sudah terdaftar untuk mahasiswa lain.'
                 ]
             ],
-            'password'         => [
-                'label'  => 'Password',
-                'rules'  => 'required|min_length[8]',
+            'password' => [
+                'label' => 'Password',
+                'rules' => 'required|min_length[8]',
                 'errors' => [
-                    'required'   => '{field} wajib diisi.',
+                    'required' => '{field} wajib diisi.',
                     'min_length' => '{field} minimal harus 8 karakter.'
                 ]
             ],
             'password_confirm' => [
-                'label'  => 'Konfirmasi Password',
-                'rules'  => 'required|matches[password]',
+                'label' => 'Konfirmasi Password',
+                'rules' => 'required|matches[password]',
                 'errors' => [
                     'required' => '{field} wajib diisi.',
-                    'matches'  => '{field} tidak cocok dengan Password.'
+                    'matches' => '{field} tidak cocok dengan Password.'
                 ]
             ],
         ];
@@ -169,8 +183,8 @@ class AuthController extends BaseController
         // 2. Siapkan Data untuk Model
         // Data untuk tabel mahasiswa
         $mahasiswaData = [
-            'nim'   => $this->request->getVar('nim'), // Gunakan getVar untuk konsistensi
-            'nama'  => $this->request->getVar('nama_mahasiswa'),
+            'nim' => $this->request->getVar('nim'), // Gunakan getVar untuk konsistensi
+            'nama' => $this->request->getVar('nama_mahasiswa'),
             'email' => $this->request->getVar('email_mahasiswa'),
             // 'foto_wajah' => (handle file upload jika ada)
         ];
@@ -178,13 +192,13 @@ class AuthController extends BaseController
         // Data untuk tabel users
         // UserModel akan menghash password melalui callback $beforeInsert
         $userData = [
-            'username'     => $this->request->getVar('nim'), // Menggunakan NIM sebagai username
-            'password'     => $this->request->getVar('password'),
-            'role'         => 'mahasiswa',
+            'username' => $this->request->getVar('nim'), // Menggunakan NIM sebagai username
+            'password' => $this->request->getVar('password'),
+            'role' => 'mahasiswa',
             'reference_id' => $this->request->getVar('nim'),
-            'is_active'    => 1, // Asumsi langsung aktif. Bisa diubah jika ada alur verifikasi email.
+            'is_active' => 1, // Asumsi langsung aktif. Bisa diubah jika ada alur verifikasi email.
         ];
-        
+
         // 3. Gunakan Transaksi Database
         $db = \Config\Database::connect();
         $db->transBegin();
@@ -266,9 +280,12 @@ class AuthController extends BaseController
         if ($this->session->get('isLoggedIn')) {
             // Redirect ke dashboard yang sesuai jika sudah login
             $role = $this->session->get('role');
-            if ($role === 'admin') return redirect()->to(base_url('admin/dashboard'));
-            if ($role === 'dosen') return redirect()->to(base_url('dosen/dashboard'));
-            if ($role === 'mahasiswa') return redirect()->to(base_url('mahasiswa/dashboard'));
+            if ($role === 'admin')
+                return redirect()->to(base_url('admin/dashboard'));
+            if ($role === 'dosen')
+                return redirect()->to(base_url('dosen/dashboard'));
+            if ($role === 'mahasiswa')
+                return redirect()->to(base_url('mahasiswa/dashboard'));
             return redirect()->to(base_url('/')); // Fallback jika peran tidak dikenal
         }
 
@@ -282,6 +299,16 @@ class AuthController extends BaseController
 
     public function logout()
     {
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $activityLogModel->logActivity(
+            session()->get('id_user'),
+            session()->get('reference_id'),
+            session()->get('role'),
+            'logout',
+            'User logged out',
+            'users',
+            session()->get('id_user')
+        );
         $this->session->destroy();
         return redirect()->to(base_url('/'))->with('success', 'Anda telah berhasil logout.');
     }
