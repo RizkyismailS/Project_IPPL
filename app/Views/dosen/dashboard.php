@@ -124,7 +124,7 @@
                                             <th>Mata Kuliah</th>
                                             <th>Nama Kelas</th>
                                             <th>Belum Absen</th>
-                                            <th>Hadir</th>
+                                            <th>Jumlah Mahasiswa</th>
                                             <th>Sesi Absensi</th>
                                             <th>Pertemuan Terakhir</th>
                                             <th>Aksi</th>
