@@ -35,8 +35,8 @@
                     </a>
                 </li>
 
-                <li class="sidebar-item <?= (uri_string() == 'admin/manage_mhs') ? 'active' : '' ?>">
-                    <a href="/admin/manage_mhs" class="sidebar-link">
+                <li class="sidebar-item <?= (uri_string() == 'admin/mahasiswa/list') ? 'active' : '' ?>">
+                    <a href="/admin/mahasiswa/list" class="sidebar-link">
                         <i class="bi bi-book-fill"></i>
                         <span>Manage Mahasiswa</span>
                     </a>
@@ -59,7 +59,7 @@
                 </li>
 
                 <li class="sidebar-item">
-                    <a href="admin/logs" class="sidebar-link">
+                    <a href="logs" class="sidebar-link">
                         <i class="bi bi-graph-up"></i>
                         <span>Monitoring</span>
                     </a>
