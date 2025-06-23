@@ -694,7 +694,8 @@ class DosenController extends BaseController
             ->set(['status' => 'terlewat'])
             ->update();
 
-        return true;
+            return redirect()->to(base_url('admin/dashboard'))
+            ->with('success', "Status sesi berhasil diperbarui.");
     }
 
 

@@ -40,7 +40,7 @@ class ActivityLogModel extends Model
             'action' => $action,
             'description' => $description,
             'ip_address' => $request->getIPAddress(),
-            'user_agent' => $request->getUserAgent()->getAgentString(),
+            'user_agent' => $request->getUserAgent()->__toString(),
             'related_table' => $relatedTable,
             'related_id' => $relatedId,
         ]);
@@ -51,12 +51,9 @@ class ActivityLogModel extends Model
     {
         $builder = $this->builder();
         
-        // Apply filters if provided
         if (!empty($filters)) {
             foreach ($filters as $field => $value) {
-                if ($value !== null) {
-                    $builder->where($field, $value);
-                }
+                $builder->where($field, $value);
             }
         }
         
@@ -73,9 +70,7 @@ class ActivityLogModel extends Model
         
         if (!empty($filters)) {
             foreach ($filters as $field => $value) {
-                if ($value !== null) {
-                    $builder->where($field, $value);
-                }
+                $builder->where($field, $value);
             }
         }
         

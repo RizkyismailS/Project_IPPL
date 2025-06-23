@@ -124,7 +124,8 @@
                     <div class="row mb-3">
                         <div class="col-9">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-bandaid-fill text-warning fs-4"></i>
+                                <i class="bi bi-envelope-fill text-info fs-4"></i>
+
                                 <h5 class="mb-0 ms-3">Sakit</h5>
                             </div>
                         </div>
@@ -136,7 +137,7 @@
                     <div class="row mb-3">
                         <div class="col-9">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-envelope-fill text-info fs-4"></i>
+                                <i class="bi bi-envelope-fill text-warning fs-4"></i>
                                 <h5 class="mb-0 ms-3">Izin</h5>
                             </div>
                         </div>

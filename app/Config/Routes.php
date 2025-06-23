@@ -50,6 +50,8 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->post('profile/change-password', 'DosenController::changePassword');
     $routes->get('logs', 'LogController::index');
     $routes->get('logs/user/(:num)', 'LogController::userLogs/$1');
+    $routes->get('update-session-status', 'AdminController::updateSessionStatus');
+
 });
 
 // Dosen Routes (Gunakan grup dengan filter)
@@ -71,6 +73,8 @@ $routes->group('dosen', ['filter' => 'dosenAuthFilter'], static function ($route
     $routes->get('list-sesi/(:segment)', 'DosenController::listSesi/$1');
     $routes->get('laporan-sesi/(:num)', 'DosenController::laporanSesi/$1');
     $routes->get('logs', 'LogController::userLogs');
+    $routes->get('update-session-status', 'DosenController::updateSessionStatuses');
+
 });
 
 // Mahasiswa Routes (Gunakan grup dengan filter)
