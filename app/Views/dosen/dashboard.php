@@ -1,16 +1,27 @@
+<?php
+?>
 <?= $this->extend('layout/template') ?>
 <?= $this->section('content') ?>
 <?php
   $breadcrumb = 'Dashboard';
   $pageTitle = 'Dashboard Dosen';
-  echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle'));
+  $nama_user = session()->get('nama_lengkap') ?? session()->get('username') ?? 'Dosen';
+  echo view('layout/dosen_header', compact('breadcrumb', 'pageTitle', 'nama_user'));
 ?>
 
 <div class="page-content">
     <section class="row">
         <!-- Cards: Jumlah Kelas, Mahasiswa, Total Absen -->
         <div class="col-12 col-lg-12">
+            <!-- Status updates button for manual refresh -->
+            <div class="text-end mb-2">
+                <a href="<?= base_url('dosen/update-session-status') ?>" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-sync-alt"></i> Perbarui Status Sesi
+                </a>
+            </div>
+            
             <div class="row">
+                <!-- Kelas Card -->
                 <div class="col-6 col-lg-4 col-md-6">
                     <div class="card">
                         <div class="card-body px-3 py-4-5">
@@ -22,12 +33,14 @@
                                 </div>
                                 <div class="col-md-8">
                                     <h6 class="text-muted font-semibold">Jumlah Kelas</h6>
-                                    <h6 class="font-extrabold mb-0"><?= $totalKelas ?></h6>
+                                    <h6 class="font-extrabold mb-0"><?= $totalKelas ?? 0 ?></h6>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Mahasiswa Card -->
                 <div class="col-6 col-lg-4 col-md-6">
                     <div class="card">
                         <div class="card-body px-3 py-4-5">
@@ -39,12 +52,14 @@
                                 </div>
                                 <div class="col-md-8">
                                     <h6 class="text-muted font-semibold">Jumlah Mahasiswa</h6>
-                                    <h6 class="font-extrabold mb-0"><?= $totalMahasiswa ?></h6>
+                                    <h6 class="font-extrabold mb-0"><?= $totalMahasiswa ?? 0 ?></h6>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Sesi Absen Card -->
                 <div class="col-6 col-lg-4 col-md-6">
                     <div class="card">
                         <div class="card-body px-3 py-4-5">
@@ -56,7 +71,7 @@
                                 </div>
                                 <div class="col-md-8">
                                     <h6 class="text-muted font-semibold">Total Sesi Absen</h6>
-                                    <h6 class="font-extrabold mb-0"><?= $totalAbsensi ?></h6>
+                                    <h6 class="font-extrabold mb-0"><?= $totalAbsensi ?? 0 ?></h6>
                                 </div>
                             </div>
                         </div>
@@ -65,9 +80,8 @@
             </div>
 
             <!-- Statistik dan Chart -->
-            <!-- CHART ROW: Line + Bar chart -->
             <div class="row">
-                <!-- Line Chart -->
+                <!-- Line Chart - Statistik Mingguan -->
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-header">
@@ -79,7 +93,7 @@
                     </div>
                 </div>
 
-                <!-- Pie Chart -->
+                <!-- Pie Chart - Distribusi Kehadiran -->
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-header">
@@ -92,8 +106,8 @@
                 </div>
             </div>
 
+            <!-- Tabel Absensi Kelas -->
             <div class="row">
-                <!-- Tabel Absensi -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between">
@@ -103,47 +117,50 @@
                             </a>
                         </div>
                         <div class="card-body">
-                            <table class="table table-striped table-hover" id="table1">
-                                <thead>
-                                    <tr>
-                                        <th>Mata Kuliah</th>
-                                        <th>Nama Kelas</th>
-                                        <th>Belum Absen</th>
-                                        <th>Hadir</th>
-                                        <th>Sesi Absensi</th>
-                                        <th>Pertemuan Terakhir</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($kelasAbsensiData as $kelas): ?>
-                                    <tr>
-                                        <td><?= esc($kelas['nama_matakuliah'] ?? '-') ?></td>
-                                        <td><?= esc($kelas['nama_kelas'] ?? '-') ?></td>
-                                        <td><?= $kelas['belum_absen'] ?? 0 ?></td>
-                                        <td><?= $kelas['total_hadir'] ?? 0 ?></td>
-                                        <td><?= $kelas['total_sesi'] ?? 0 ?></td>
-                                        <td>
-                                            <?php if(isset($kelas['last_session']) && $kelas['last_session']): ?>
-                                                <?= date('d M Y', strtotime($kelas['last_session'])) ?>
-                                            <?php else: ?>
-                                                Belum ada sesi
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="<?= base_url('dosen/kelas/detail/' . $kelas['kode_kelas']) ?>" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                    <?php if (empty($kelasAbsensiData)): ?>
-                                    <tr>
-                                        <td colspan="7" class="text-center">Tidak ada data kelas</td>
-                                    </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="table1">
+                                    <thead>
+                                        <tr>
+                                            <th>Mata Kuliah</th>
+                                            <th>Nama Kelas</th>
+                                            <th>Belum Absen</th>
+                                            <th>Hadir</th>
+                                            <th>Sesi Absensi</th>
+                                            <th>Pertemuan Terakhir</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (!empty($kelasAbsensiData) && is_array($kelasAbsensiData)): ?>
+                                            <?php foreach ($kelasAbsensiData as $kelas): ?>
+                                                <tr>
+                                                    <td><?= esc($kelas['nama_matakuliah'] ?? '-') ?></td>
+                                                    <td><?= esc($kelas['nama_kelas'] ?? '-') ?></td>
+                                                    <td><?= $kelas['belum_absen'] ?? 0 ?></td>
+                                                    <td><?= $kelas['total_hadir'] ?? 0 ?></td>
+                                                    <td><?= $kelas['total_sesi'] ?? 0 ?></td>
+                                                    <td>
+                                                        <?php if(isset($kelas['last_session']) && $kelas['last_session']): ?>
+                                                            <?= date('d M Y', strtotime($kelas['last_session'])) ?>
+                                                        <?php else: ?>
+                                                            Belum ada sesi
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <a href="<?= base_url('dosen/kelas/detail/' . esc($kelas['kode_kelas'])) ?>" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr>
+                                                <td colspan="7" class="text-center">Tidak ada data kelas</td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -154,8 +171,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Define default empty arrays to prevent JavaScript errors
+    const hadirData = <?= isset($hadirData) ? $hadirData : '[]' ?>;
+    const absenData = <?= isset($absenData) ? $absenData : '[]' ?>;
+    const izinData = <?= isset($izinData) ? $izinData : '[]' ?>;
+    const weekLabels = <?= isset($weekLabels) ? $weekLabels : '[]' ?>;
+    const pieValues = <?= isset($pieValues) ? $pieValues : '[0, 0, 0]' ?>;
+    const pieLabels = <?= isset($pieLabels) ? $pieLabels : '["Hadir", "Tidak Hadir", "Izin"]' ?>;
+    
     // Line Chart - Weekly Attendance
-    var optionsLine = {
+    const optionsLine = {
         chart: {
             type: 'line',
             height: 350,
@@ -171,27 +196,22 @@ document.addEventListener('DOMContentLoaded', function() {
             width: [4, 4, 4],
             curve: 'smooth'
         },
-        plotOptions: {
-            bar: {
-                columnWidth: '20%'
-            }
-        },
         colors: ['#435ebe', '#dc3545', '#ff9f43'],
         series: [
             {
                 name: 'Hadir',
                 type: 'line',
-                data: <?= $hadirData ?>
+                data: hadirData
             },
             {
                 name: 'Tidak Hadir',
                 type: 'line',
-                data: <?= $absenData ?>
+                data: absenData
             },
             {
                 name: 'Izin',
                 type: 'line',
-                data: <?= $izinData ?>
+                data: izinData
             }
         ],
         fill: {
@@ -209,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
             size: 0
         },
         xaxis: {
-            categories: <?= $weekLabels ?>,
+            categories: weekLabels,
         },
         yaxis: {
             title: {
@@ -236,15 +256,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    var chartLine = new ApexCharts(
+    const chartLine = new ApexCharts(
         document.querySelector("#attendance-chart"),
         optionsLine
     );
     chartLine.render();
 
     // Pie Chart - Attendance Distribution
-    var optionsPie = {
-        series: <?= $pieValues ?>,
+    const optionsPie = {
+        series: pieValues,
         chart: {
             type: 'pie',
             height: 350,
@@ -252,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 show: true,
             }
         },
-        labels: <?= $pieLabels ?>,
+        labels: pieLabels,
         colors: ['#435ebe', '#dc3545', '#ff9f43'],
         responsive: [{
             breakpoint: 480,
@@ -274,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    var chartPie = new ApexCharts(
+    const chartPie = new ApexCharts(
         document.querySelector("#attendance-distribution"), 
         optionsPie
     );
