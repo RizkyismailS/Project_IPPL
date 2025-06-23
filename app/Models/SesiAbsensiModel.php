@@ -62,20 +62,21 @@ class SesiAbsensiModel extends Model
     {
         $now = date('Y-m-d H:i:s');
 
-        return $this->select('sesi_absensi.id_sesi, sesi_absensi.topik_perkuliahan, sesi_absensi.waktu_selesai_aktual, kelas.nama_kelas, matakuliah.nama_matakuliah')
-            ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
-            ->join('matakuliah', 'matakuliah.kode_matakuliah = kelas.kode_matakuliah')
-            ->join('enrollment', 'enrollment.kode_kelas_enrolled = kelas.kode_kelas')
-            ->where('enrollment.nim_mahasiswa', $nim)
-            ->where('enrollment.status_enrollment', 'aktif') // Menggunakan nama kolom yang benar
-            ->where('sesi_absensi.status', 'aktif') // Menggunakan status sesi yang benar
-            ->where('sesi_absensi.waktu_mulai_aktual <=', $now)
-            ->where("NOT EXISTS (
-                SELECT 1 FROM kehadiran 
-                WHERE kehadiran.id_sesi = sesi_absensi.id_sesi 
-                AND kehadiran.nim = " . $this->db->escape($nim) . "
-            )")
-            ->first();
+    return $this->select('sesi_absensi.*, kelas.nama_kelas, matakuliah.nama_matakuliah')
+        ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
+        ->join('matakuliah', 'matakuliah.kode_matakuliah = kelas.kode_matakuliah')
+        ->join('enrollment', 'enrollment.kode_kelas_enrolled = kelas.kode_kelas')
+        ->where('enrollment.nim_mahasiswa', $nim)
+        ->where('enrollment.status_enrollment', 'aktif') // Menggunakan nama kolom yang benar
+        ->where('sesi_absensi.status', 'aktif') // Menggunakan status sesi yang benar
+        ->where('sesi_absensi.waktu_mulai_aktual <=', $now) // Sesi sudah dimulai
+        ->where('sesi_absensi.waktu_selesai_aktual >=', $now) // Sesi belum berakhir
+        ->where("NOT EXISTS (
+            SELECT 1 FROM kehadiran 
+            WHERE kehadiran.id_sesi = sesi_absensi.id_sesi 
+            AND kehadiran.nim = " . $this->db->escape($nim) . "
+        )")
+        ->first();
     }
 
     /**

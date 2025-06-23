@@ -291,7 +291,35 @@ class MahasiswaController extends BaseController
         }
 
         // --- Mengumpulkan Semua Data untuk Dasbor ---
+
+        // Get active session with proper filtering
         $activeSession = $sesiAbsensiModel->findActiveSessionForMahasiswa($nim_mahasiswa);
+
+        // Additional check to ensure the session is truly active
+        // and the student hasn't already submitted attendance
+        if ($activeSession) {
+            // Check if session is actually still active based on time
+            $now = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
+            $sessionStart = new \DateTime($activeSession['waktu_mulai_aktual'], new \DateTimeZone('Asia/Jakarta'));
+            $sessionEnd = new \DateTime($activeSession['waktu_selesai_aktual'], new \DateTimeZone('Asia/Jakarta'));
+
+            // Check if current time is outside session time range
+            if ($now < $sessionStart || $now > $sessionEnd || $activeSession['status'] !== 'aktif') {
+                // Session is not actually active based on time or status
+                $activeSession = null;
+            } else {
+                // Check if student has already submitted attendance for this session
+                $existingAttendance = $kehadiranModel->where('nim', $nim_mahasiswa)
+                    ->where('id_sesi', $activeSession['id_sesi'])
+                    ->first();
+
+                if ($existingAttendance) {
+                    // Student has already submitted attendance for this session
+                    $activeSession = null;
+                }
+            }
+        }
+
         $stats = $kehadiranModel->getAttendanceStats($nim_mahasiswa);
         $history = $kehadiranModel->getAttendanceHistory($nim_mahasiswa, 5);
 
