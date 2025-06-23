@@ -43,9 +43,9 @@
                 </li>
 
                 <li class="sidebar-item">
-                    <a href="/mahasiswa/absensi" class="sidebar-link">
+                    <a href="/mahasiswa/logs" class="sidebar-link">
                         <i class="bi bi-book-fill"></i>
-                        <span>Absensi Kelas</span>
+                        <span>Aktivitas anda</span>
                     </a>
                 </li>
 

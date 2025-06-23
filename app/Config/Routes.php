@@ -30,6 +30,14 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->post('dosen/delete/(:segment)', 'AdminController::deleteDosen/$1'); // Menggunakan POST
     $routes->get('dosen/activate/(:segment)', 'AdminController::activateDosen/$1');
     $routes->get('dosen/deactivate/(:segment)', 'AdminController::deactivateDosen/$1');
+    $routes->get('mahasiswa/list', 'AdminController::listMahasiswa');
+    $routes->get('mahasiswa/create', 'AdminController::createUserMahasiswaForm'); // Form
+    $routes->post('mahasiswa/store', 'AdminController::storeUserMahasiswa');
+    $routes->get('mahasiswa/edit/(:segment)', 'AdminController::editMahasiswaForm/$1');
+    $routes->get('mahasiswa/delete/(:segment)', 'AdminController::deleteMhs/$1'); // Menggunakan GET untuk menghapus mahasiswa
+    $routes->put('mahasiswa/update/(:segment)', 'AdminController::updateMahasiswa/$1');
+    $routes->get('mahasiswa/activate/(:segment)', 'AdminController::activateMahasiswa/$1');
+    $routes->get('mahasiswa/deactivate/(:segment)', 'AdminController::deactivateMahasiswa/$1');
     $routes->get('sesi', 'AdminController::listSesi');
     $routes->get('matakuliah', 'MatakuliahController::index');
     $routes->get('matakuliah/create', 'MatakuliahController::create');

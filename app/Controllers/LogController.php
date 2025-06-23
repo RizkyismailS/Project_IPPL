@@ -80,7 +80,7 @@ class LogController extends BaseController
         $perPage = 20;
         
         $filters = [
-            'id_user' => $userId,
+            'user_id' => $userId,
             'action' => $this->request->getVar('action'),
         ];
         
