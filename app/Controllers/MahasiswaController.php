@@ -37,6 +37,238 @@ class MahasiswaController extends BaseController
         // }
     }
 
+    /**
+     * Displays the student profile page
+     */
+    public function profile()
+    {
+        $nimMahasiswa = $this->session->get('reference_id');
+
+        // Get mahasiswa data
+        $mahasiswaModel = new \App\Models\MahasiswaModel();
+        $mahasiswa = $mahasiswaModel->find($nimMahasiswa);
+
+        if (!$mahasiswa) {
+            return redirect()->to(base_url('mahasiswa/dashboard'))
+                ->with('error', 'Data profil mahasiswa tidak ditemukan.');
+        }
+
+        // Get user account data
+        $userModel = new \App\Models\UserModel();
+        $user = $userModel->where('reference_id', $nimMahasiswa)
+            ->where('role', 'mahasiswa')
+            ->first();
+
+        // Get last login time
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $lastLoginActivity = $activityLogModel->where('user_id', $this->session->get('id_user'))
+            ->where('action', 'login')
+            ->orderBy('created_at', 'DESC')
+            ->first();
+        $lastLogin = $lastLoginActivity ? $lastLoginActivity['created_at'] : null;
+
+        // Prepare data for view
+        $data = [
+            'title' => 'Profil Mahasiswa',
+            'mahasiswa' => $mahasiswa,
+            'user' => $user,
+            'last_login' => $lastLogin,
+            'validation' => \Config\Services::validation()
+        ];
+
+        return view('mahasiswa/profil', $data);
+    }
+
+    /**
+     * Updates the student profile information
+     */
+    public function updateProfile()
+    {
+        $nimMahasiswa = $this->session->get('reference_id');
+        $mahasiswaModel = new \App\Models\MahasiswaModel();
+
+        // Validation rules
+        $rules = [
+            'nama' => [
+                'label' => 'Nama Lengkap',
+                'rules' => 'required|string|max_length[100]'
+            ],
+            'email' => [
+                'label' => 'Email',
+                'rules' => "required|valid_email|max_length[100]|is_unique[mahasiswa.email,nim,{$nimMahasiswa}]"
+            ]
+        ];
+
+        // Run validation
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('validation', $this->validator)
+                ->with('error', 'Terdapat kesalahan pada form. Silakan periksa kembali.');
+        }
+
+        // Prepare data for update
+        $updateData = [
+            'nama' => $this->request->getPost('nama'),
+            'email' => $this->request->getPost('email')
+        ];
+
+        // Start transaction
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // Update mahasiswa data
+            $updated = $mahasiswaModel->update($nimMahasiswa, $updateData);
+
+            if (!$updated) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal mengupdate profil. ' . implode(', ', $mahasiswaModel->errors()));
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Terjadi kesalahan database saat mengupdate profil.');
+            }
+
+            // All good, commit transaction
+            $db->transCommit();
+
+            // Update session name if changed
+            if ($this->session->get('nama_lengkap') !== $updateData['nama']) {
+                $this->session->set('nama_lengkap', $updateData['nama']);
+            }
+
+            // Log activity
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity(
+                $this->session->get('id_user'),
+                $nimMahasiswa,
+                'mahasiswa',
+                'update_profile',
+                'Updated profile information',
+                'mahasiswa',
+                $nimMahasiswa
+            );
+
+            return redirect()->to(base_url('mahasiswa/profile'))
+                ->with('success', 'Profil Anda berhasil diupdate.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[MahasiswaController] Exception saat update profile: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Changes the student password
+     */
+    public function changePassword()
+    {
+        $userModel = new \App\Models\UserModel();
+        $userId = $this->session->get('id_user');
+        $user = $userModel->find($userId);
+
+        if (!$user) {
+            return redirect()->back()
+                ->with('error', 'Akun pengguna tidak ditemukan.');
+        }
+
+        // Validation rules
+        $rules = [
+            'current_password' => [
+                'label' => 'Password Saat Ini',
+                'rules' => 'required'
+            ],
+            'new_password' => [
+                'label' => 'Password Baru',
+                'rules' => 'required|min_length[8]'
+            ],
+            'confirm_password' => [
+                'label' => 'Konfirmasi Password',
+                'rules' => 'required|matches[new_password]'
+            ],
+        ];
+
+        // Run validation
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('validation', $this->validator)
+                ->with('error', 'Terdapat kesalahan pada form password. Silakan periksa kembali.');
+        }
+
+        // Verify current password
+        $currentPassword = $this->request->getPost('current_password');
+        if (!password_verify($currentPassword, $user['password'])) {
+            return redirect()->back()
+                ->with('error', 'Password saat ini tidak cocok.');
+        }
+
+        // Prepare data for update
+        $updateData = [
+            'password' => $this->request->getPost('new_password'),
+            // No need to hash, UserModel will handle it via beforeUpdate callback
+        ];
+
+        // Start transaction
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // Update password
+            $updated = $userModel->update($userId, $updateData);
+
+            if (!$updated) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->with('error', 'Gagal mengubah password. ' . implode(', ', $userModel->errors()));
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->with('error', 'Terjadi kesalahan database saat mengubah password.');
+            }
+
+            // All good, commit transaction
+            $db->transCommit();
+
+            // Log activity
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity(
+                $userId,
+                $this->session->get('reference_id'),
+                'mahasiswa',
+                'change_password',
+                'Changed account password',
+                'users',
+                $userId
+            );
+
+            return redirect()->to(base_url('mahasiswa/profile'))
+                ->with('success', 'Password Anda berhasil diubah.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[MahasiswaController] Exception saat mengubah password: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menampilkan halaman dashboard mahasiswa.
+     * Halaman ini menampilkan profil mahasiswa, sesi absensi aktif,
+     * statistik kehadiran, dan riwayat kehadiran.
+     */
     public function dashboard()
     {
         // Inisialisasi semua model
@@ -75,22 +307,9 @@ class MahasiswaController extends BaseController
         return view('mahasiswa/dashboard', $data);
     }
 
-    // Contoh: Menampilkan profil mahasiswa yang sedang login
-    public function profile()
-    {
-        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'mahasiswa') {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Akses ditolak']);
-        }
-        $nimMahasiswa = $this->session->get('reference_id');
-        $mahasiswa = $this->mahasiswaModel->getMahasiswaWithUser($nimMahasiswa); // Fungsi dari MahasiswaModel
-
-        if ($mahasiswa) {
-            return $this->response->setJSON($mahasiswa);
-        } else {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'Profil mahasiswa tidak ditemukan.']);
-        }
-    }
-
+    /**
+     * Menampilkan form untuk mahasiswa melakukan enrollment kelas baru.
+     */
     public function enrollForm()
     {
         $nim = $this->session->get('reference_id');

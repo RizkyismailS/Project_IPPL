@@ -45,6 +45,9 @@ $routes->group('admin', ['filter' => 'adminAuthFilter'], static function ($route
     $routes->get('matakuliah/edit/(:segment)', 'MatakuliahController::edit/$1');
     $routes->post('matakuliah/update/(:segment)', 'MatakuliahController::update/$1');
     $routes->post('matakuliah/delete/(:segment)', 'MatakuliahController::delete/$1');
+    $routes->get('profile', 'DosenController::profile');
+    $routes->post('profile/update', 'DosenController::updateProfile');
+    $routes->post('profile/change-password', 'DosenController::changePassword');
     $routes->get('logs', 'LogController::index');
     $routes->get('logs/user/(:num)', 'LogController::userLogs/$1');
 });
@@ -81,5 +84,9 @@ $routes->group('mahasiswa', ['filter' => 'mahasiswaAuthFilter'], static function
     $routes->get('sesi/(:segment)', 'MahasiswaController::listSesi/$1');
     $routes->post('submitAbsensi', 'MahasiswaController::submitAbsensi');
     $routes->get('logs', 'LogController::userLogs');
+    $routes->get('profile', 'MahasiswaController::profile');
+    $routes->post('profile/update', 'MahasiswaController::updateProfile');
+    $routes->post('profile/change-password', 'MahasiswaController::changePassword');
+    
 
 });

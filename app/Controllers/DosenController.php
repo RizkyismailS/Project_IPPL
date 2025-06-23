@@ -48,6 +48,230 @@ class DosenController extends BaseController
         return strtotime($end) > strtotime($start);
     }
 
+    public function profile()
+    {
+        $dosenNip = $this->session->get('reference_id');
+
+        // Get dosen data
+        $dosenModel = new DosenModel();
+        $dosen = $dosenModel->find($dosenNip);
+
+        if (!$dosen) {
+            return redirect()->to(base_url('dosen/dashboard'))
+                ->with('error', 'Data profil dosen tidak ditemukan.');
+        }
+
+        // Get user account data
+        $userModel = new \App\Models\UserModel();
+        $user = $userModel->where('reference_id', $dosenNip)
+            ->where('role', 'dosen')
+            ->first();
+
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $lastLoginActivity = $activityLogModel->where('user_id', $this->session->get('id_user'))
+            ->where('action', 'login')
+            ->orderBy('created_at', 'DESC')
+            ->first();
+        $lastLogin = $lastLoginActivity ? $lastLoginActivity['created_at'] : null;
+
+        // Prepare data for view
+        $data = [
+            'title' => 'Profil Dosen',
+            'dosen' => $dosen,
+            'user' => $user,
+            'last_login' => $lastLogin,
+            'validation' => \Config\Services::validation(),
+            'sidebar' => 'layout/dosen_sidebar',
+            'nama_user' => $this->session->get('nama_lengkap') ?? $this->session->get('username'),
+        ];
+
+        return view('dosen/profil', $data);
+    }
+
+    public function updateProfile()
+    {
+        $dosenNip = $this->session->get('reference_id');
+        $dosenModel = new DosenModel();
+
+        // Validation rules
+        $rules = [
+            'nama' => [
+                'label' => 'Nama Lengkap',
+                'rules' => 'required|string|max_length[100]'
+            ],
+            'email' => [
+                'label' => 'Email',
+                'rules' => "required|valid_email|max_length[100]|is_unique[dosen.email,nip,{$dosenNip}]"
+            ],
+            'jabatan' => [
+                'label' => 'Jabatan',
+                'rules' => 'permit_empty|string|max_length[50]'
+            ]
+        ];
+
+        // Run validation
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('validation', $this->validator)
+                ->with('error', 'Terdapat kesalahan pada form. Silakan periksa kembali.');
+        }
+
+        // Prepare data for update
+        $updateData = [
+            'nama' => $this->request->getPost('nama'),
+            'email' => $this->request->getPost('email'),
+            'jabatan' => $this->request->getPost('jabatan'),
+        ];
+
+        // Start transaction
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // Update dosen data
+            $updated = $dosenModel->update($dosenNip, $updateData);
+
+            if (!$updated) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal mengupdate profil. ' . implode(', ', $dosenModel->errors()));
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Terjadi kesalahan database saat mengupdate profil.');
+            }
+
+            // All good, commit transaction
+            $db->transCommit();
+
+            // Update session name if changed
+            if ($this->session->get('nama_lengkap') !== $updateData['nama']) {
+                $this->session->set('nama_lengkap', $updateData['nama']);
+            }
+
+            // Log activity
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity(
+                $this->session->get('id_user'),
+                $dosenNip,
+                'dosen',
+                'update_profile',
+                'Updated profile information',
+                'dosen',
+                $dosenNip
+            );
+
+            return redirect()->to(base_url('dosen/profile'))
+                ->with('success', 'Profil Anda berhasil diupdate.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[DosenController] Exception saat update profile: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function changePassword()
+    {
+        $userModel = new \App\Models\UserModel();
+        $userId = $this->session->get('id_user');
+        $user = $userModel->find($userId);
+
+        if (!$user) {
+            return redirect()->back()
+                ->with('error', 'Akun pengguna tidak ditemukan.');
+        }
+
+        // Validation rules
+        $rules = [
+            'current_password' => [
+                'label' => 'Password Saat Ini',
+                'rules' => 'required'
+            ],
+            'new_password' => [
+                'label' => 'Password Baru',
+                'rules' => 'required|min_length[8]'
+            ],
+            'confirm_password' => [
+                'label' => 'Konfirmasi Password',
+                'rules' => 'required|matches[new_password]'
+            ],
+        ];
+
+        // Run validation
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('validation', $this->validator)
+                ->with('error', 'Terdapat kesalahan pada form password. Silakan periksa kembali.');
+        }
+
+        // Verify current password
+        $currentPassword = $this->request->getPost('current_password');
+        if (!password_verify($currentPassword, $user['password'])) {
+            return redirect()->back()
+                ->with('error', 'Password saat ini tidak cocok.');
+        }
+
+        // Prepare data for update
+        $updateData = [
+            'password' => $this->request->getPost('new_password'),
+            // Don't need to hash, UserModel will handle it via beforeUpdate callback
+        ];
+
+        // Start transaction
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // Update password
+            $updated = $userModel->update($userId, $updateData);
+
+            if (!$updated) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->with('error', 'Gagal mengubah password. ' . implode(', ', $userModel->errors()));
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return redirect()->back()
+                    ->with('error', 'Terjadi kesalahan database saat mengubah password.');
+            }
+
+            // All good, commit transaction
+            $db->transCommit();
+
+            // Log activity
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity(
+                $userId,
+                $this->session->get('reference_id'),
+                'dosen',
+                'change_password',
+                'Changed account password',
+                'users',
+                $userId
+            );
+
+            return redirect()->to(base_url('dosen/profile'))
+                ->with('success', 'Password Anda berhasil diubah.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', '[DosenController] Exception saat mengubah password: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
     public function dashboard()
     {
         $dosenNip = $this->session->get('reference_id');
