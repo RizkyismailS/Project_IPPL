@@ -40,8 +40,10 @@
 
                     <div class="border rounded mb-4 p-3 d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 45px; height: 45px; font-size: 1.2rem;">
-                                <?= esc(strtoupper(substr($nama_user ?? 'U', 0, 1))) ?>
+                            <div class="avatar avatar-lg">
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                    <?= esc(strtoupper(substr($nama_user ?? 'U', 0, 1))) ?>
+                                </div>
                             </div>
                             <div>
                                 <div class="text-muted small">Logged in as</div>
