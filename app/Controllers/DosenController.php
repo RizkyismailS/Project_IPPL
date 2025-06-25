@@ -277,6 +277,8 @@ class DosenController extends BaseController
         $dosenNip = $this->session->get('reference_id');
         $db = \Config\Database::connect();
 
+
+        $this->updateSessionStatuses();
         // Get basic statistics
         $totalKelas = $this->kelasModel->where('dosen_nip', $dosenNip)->countAllResults();
 
