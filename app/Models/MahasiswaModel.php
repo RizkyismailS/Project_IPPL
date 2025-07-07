@@ -8,75 +8,79 @@ class MahasiswaModel extends Model
 {
     protected $DBGroup          = 'default';
     protected $table            = 'mahasiswa';
-    protected $primaryKey       = 'nim'; // Primary key adalah 'nim'
-    protected $useAutoIncrement = false;   // 'nim' bukan auto-increment
+    protected $primaryKey       = 'nim';
+    protected $useAutoIncrement = false;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     
-    // Kolom yang diizinkan untuk diisi atau diubah
     protected $allowedFields    = [
         'nim', 
         'nama', 
         'email', 
         'foto_wajah',
-        'created_at', // Jika diisi manual
-        'updated_at'  // Jika diisi manual
+        'created_at',
+        'updated_at'
     ];
 
-    // Dates
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    // Validation Rules
-    protected $validationRules = [
-         'nim'        => 'required|alpha_numeric|max_length[20]|is_unique[mahasiswa.nim]',
-        'nama'       => 'required|string|max_length[100]',
-        'email'      => 'required|valid_email|max_length[100]|is_unique[mahasiswa.email]',
-        'foto_wajah' => 'permit_empty|string|max_length[255]', // Asumsi path, sesuaikan
-    ];
-
-    // Pesan kustom untuk error validasi (opsional)
-    protected $validationMessages = [
-        'nim' => [
-            'required'  => 'NIM wajib diisi.',
-            'is_unique' => 'NIM ini sudah terdaftar.',
-            'max_length'=> 'NIM maksimal 20 karakter.'
-        ],
-        'nama' => [
-            'required'   => 'Nama mahasiswa wajib diisi.',
-            'max_length' => 'Nama mahasiswa maksimal 100 karakter.'
-        ],
-        'email' => [
-            'required'    => 'Email wajib diisi.',
-            'valid_email' => 'Format email tidak valid.',
-            'is_unique'   => 'Email ini sudah digunakan.',
-            'max_length'  => 'Email maksimal 100 karakter.'
-        ]
-    ];
-    protected $skipValidation       = false;
+    // Remove static validation rules since we'll handle them dynamically
+    protected $validationRules = [];
+    protected $validationMessages = [];
+    protected $skipValidation = false;
     protected $cleanValidationRules = true;
 
-    // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
+    protected $beforeInsert   = ['validateForInsert'];
+    protected $beforeUpdate   = ['validateForUpdate'];
 
-    // Contoh fungsi kustom:
-    /**
-     * Mendapatkan detail mahasiswa beserta informasi user login jika ada.
-     *
-     * @param string $nim
-     * @return array|object|null
-     */
+    protected function validateForInsert(array $data)
+    {
+        $rules = [
+            'nim'        => 'required|alpha_numeric|max_length[20]|is_unique[mahasiswa.nim]',
+            'nama'       => 'required|string|max_length[100]',
+            'email'      => 'required|valid_email|max_length[100]|is_unique[mahasiswa.email]',
+            'foto_wajah' => 'permit_empty|string|max_length[255]',
+        ];
+        
+        $this->setValidationRules($rules);
+        return $data;
+    }
+
+    protected function validateForUpdate(array $data)
+    {
+        // Get the current record to compare values
+        $nim = $data['id'][0] ?? null; // Primary key value
+        if (!$nim) {
+            return $data;
+        }
+
+        $currentRecord = $this->find($nim);
+        if (!$currentRecord) {
+            return $data;
+        }
+
+        $rules = [
+            'nama' => 'required|string|max_length[100]',
+            'foto_wajah' => 'permit_empty|string|max_length[255]',
+        ];
+
+        // Only validate email uniqueness if it has changed
+        if (isset($data['data']['email']) && $data['data']['email'] !== $currentRecord['email']) {
+            $rules['email'] = "required|valid_email|max_length[100]|is_unique[mahasiswa.email,nim,{$nim}]";
+        } else if (isset($data['data']['email'])) {
+            $rules['email'] = 'required|valid_email|max_length[100]';
+        }
+
+        $this->setValidationRules($rules);
+        return $data;
+    }
+
+    // Rest of your existing methods...
     public function getMahasiswaWithUser(string $nim)
     {
         return $this->select('mahasiswa.*, users.username, users.is_active')
@@ -85,23 +89,15 @@ class MahasiswaModel extends Model
                     ->first();
     }
 
-    /**
-     * Mendapatkan daftar kelas yang di-enroll oleh mahasiswa.
-     *
-     * @param string $nim
-     * @return array
-     */
     public function getEnrolledKelas(string $nim)
     {
-        // Ini memerlukan join dengan tabel enrollment dan kelas
-        // Contoh sederhana, bisa dikembangkan
         $builder = $this->db->table('enrollment e');
         $builder->select('k.kode_kelas, k.nama_kelas, k.kode_matakuliah, mk.nama_matakuliah, d.nama as nama_dosen');
         $builder->join('kelas k', 'k.kode_kelas = e.kode_kelas_enrolled');
         $builder->join('matakuliah mk', 'mk.kode_matakuliah = k.kode_matakuliah');
         $builder->join('dosen d', 'd.nip = k.dosen_nip', 'left');
         $builder->where('e.nim_mahasiswa', $nim);
-        $builder->where('e.status_enrollment', 'aktif'); // Hanya kelas yang status enrollmentnya aktif
+        $builder->where('e.status_enrollment', 'aktif');
         $query = $builder->get();
         return $query->getResultArray();
     }

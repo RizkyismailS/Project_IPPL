@@ -54,7 +54,6 @@
                             <th>Dosen</th>
                             <th class="text-center">Tanggal Sesi</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -86,12 +85,6 @@
                                         <?php else: ?>
                                             <span class="badge bg-warning"><?= ucfirst(esc($s['status'])) ?></span>
                                         <?php endif; ?>
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="<?= base_url('/admin/sesi/detail/' . $s['id_sesi']) ?>" 
-                                           class="btn btn-sm btn-info">
-                                            <i class="bi bi-eye"></i> Detail
-                                        </a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

@@ -39,60 +39,60 @@ class AdminController extends BaseController
     }
 
     public function dashboard()
-{
-    if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
-        return redirect()->to(base_url('login'))->with('error', 'Akses ditolak. Hanya admin.');
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('login'))->with('error', 'Akses ditolak. Hanya admin.');
+        }
+
+        $activityLogModel = new \App\Models\ActivityLogModel();
+        $recentLogs = $activityLogModel->getActivityLogs(5);
+
+        $total_dosen = $this->dosenModel->countAll() ?? 0;
+        $total_mahasiswa = $this->mahasiswaModel->countAll() ?? 0;
+        $total_kelas_aktif = $this->kelasModel->countAllResults() ?? 0;
+        $total_sesi_aktif = $this->sesiModel->where('status', 'aktif')->countAllResults() ?? 0;
+
+        // Improved active sessions query
+        $aktifitas_sesi = $this->sesiModel->builder()
+            ->select('sesi_absensi.id_sesi, sesi_absensi.waktu_mulai_aktual, sesi_absensi.waktu_selesai_aktual, kelas.nama_kelas, kelas.waktu_mulai_kelas, kelas.waktu_selesai_kelas')
+            ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
+            ->where('sesi_absensi.status', 'aktif')
+            ->where('sesi_absensi.waktu_selesai_aktual >', date('Y-m-d H:i:s'))
+            ->orderBy('sesi_absensi.waktu_selesai_aktual', 'ASC')
+            ->limit(5)
+            ->get()
+            ->getResultArray();
+
+        // Get system notifications
+        $notifications = [
+            [
+                'icon' => 'fas fa-user-plus text-success me-2',
+                'message' => 'New lecturer account created at ' . date('H:i')
+            ],
+            [
+                'icon' => 'fas fa-check-circle text-info me-2',
+                'message' => 'Database backup completed successfully'
+            ],
+            [
+                'icon' => 'fas fa-exclamation-triangle text-warning me-2',
+                'message' => $total_sesi_aktif . ' active attendance sessions'
+            ]
+        ];
+
+        $data = [
+            'total_dosen' => $total_dosen,
+            'total_mahasiswa' => $total_mahasiswa,
+            'total_kelas_aktif' => $total_kelas_aktif,
+            'total_sesi_aktif' => $total_sesi_aktif,
+            'aktifitas_sesi' => $aktifitas_sesi,
+            'title' => 'Admin Dashboard',
+            'nama_user' => $this->session->get('nama_lengkap') ?? $this->session->get('username'),
+            'recent_logs' => $recentLogs,
+            'notifications' => $notifications,
+        ];
+
+        return view('admin/dashboard', $data);
     }
-
-    $activityLogModel = new \App\Models\ActivityLogModel();
-    $recentLogs = $activityLogModel->getActivityLogs(5);
-
-    $total_dosen = $this->dosenModel->countAll() ?? 0;
-    $total_mahasiswa = $this->mahasiswaModel->countAll() ?? 0;
-    $total_kelas_aktif = $this->kelasModel->countAllResults() ?? 0;
-    $total_sesi_aktif = $this->sesiModel->where('status', 'aktif')->countAllResults() ?? 0;
-
-    // Improved active sessions query
-    $aktifitas_sesi = $this->sesiModel->builder()
-        ->select('sesi_absensi.id_sesi, sesi_absensi.waktu_mulai_aktual, sesi_absensi.waktu_selesai_aktual, kelas.nama_kelas, kelas.waktu_mulai_kelas, kelas.waktu_selesai_kelas')
-        ->join('kelas', 'kelas.kode_kelas = sesi_absensi.kode_kelas')
-        ->where('sesi_absensi.status', 'aktif')
-        ->where('sesi_absensi.waktu_selesai_aktual >', date('Y-m-d H:i:s'))
-        ->orderBy('sesi_absensi.waktu_selesai_aktual', 'ASC')
-        ->limit(5)
-        ->get()
-        ->getResultArray();
-    
-    // Get system notifications
-    $notifications = [
-        [
-            'icon' => 'fas fa-user-plus text-success me-2',
-            'message' => 'New lecturer account created at ' . date('H:i')
-        ],
-        [
-            'icon' => 'fas fa-check-circle text-info me-2',
-            'message' => 'Database backup completed successfully'
-        ],
-        [
-            'icon' => 'fas fa-exclamation-triangle text-warning me-2',
-            'message' => $total_sesi_aktif . ' active attendance sessions'
-        ]
-    ];
-
-    $data = [
-        'total_dosen' => $total_dosen,
-        'total_mahasiswa' => $total_mahasiswa,
-        'total_kelas_aktif' => $total_kelas_aktif,
-        'total_sesi_aktif' => $total_sesi_aktif,
-        'aktifitas_sesi' => $aktifitas_sesi,
-        'title' => 'Admin Dashboard',
-        'nama_user' => $this->session->get('nama_lengkap') ?? $this->session->get('username'),
-        'recent_logs' => $recentLogs,
-        'notifications' => $notifications,
-    ];
-
-    return view('admin/dashboard', $data);
-}
 
     public function createUserDosenForm()
     {
@@ -828,12 +828,15 @@ class AdminController extends BaseController
             'nama_mahasiswa' => ['label' => 'Nama Mahasiswa', 'rules' => 'required|string|max_length[100]'],
             'email_mahasiswa' => [
                 'label' => 'Email Mahasiswa',
-                'rules' => "required|valid_email|max_length[100]|is_unique[mahasiswa.email,nim,{$nim}]|is_unique[users.username,id_user,{$userIdToIgnore}]",
-                'errors' => ['is_unique' => '{field} ini sudah digunakan oleh mahasiswa lain atau sebagai username pengguna lain.']
+                // Only check uniqueness against mahasiswa.email, ignore current record
+                'rules' => "required|valid_email|max_length[100]|is_unique[mahasiswa.email,nim,{$nim}]",
+                'errors' => ['is_unique' => '{field} ini sudah digunakan oleh mahasiswa lain.']
             ],
             'username_mahasiswa' => [
                 'label' => 'Username Mahasiswa',
-                'rules' => "required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username,id_user,{$userIdToIgnore}]",
+                'rules' => $userIdToIgnore ?
+                    "required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username,id_user,{$userIdToIgnore}]" :
+                    "required|alpha_numeric_space|min_length[3]|max_length[50]|is_unique[users.username]",
                 'errors' => ['is_unique' => '{field} ini sudah digunakan oleh pengguna lain.']
             ],
             'password_mahasiswa' => ['label' => 'Password Mahasiswa Baru', 'rules' => 'permit_empty|min_length[8]'],
@@ -857,6 +860,7 @@ class AdminController extends BaseController
                 ->with('errors', $this->validator->getErrors());
         }
 
+        
         // Siapkan Data
         $mahasiswaData = [
             'nama' => $this->request->getVar('nama_mahasiswa'),
@@ -867,6 +871,7 @@ class AdminController extends BaseController
             'username' => $this->request->getVar('username_mahasiswa'),
             'is_active' => $this->request->getVar('is_active'),
         ];
+
         // Hanya update password jika diisi
         if (!empty($this->request->getVar('password_mahasiswa'))) {
             $userData['password'] = $this->request->getVar('password_mahasiswa'); // Akan di-hash oleh UserModel
@@ -989,68 +994,68 @@ class AdminController extends BaseController
     }
 
     // Add this method to your AdminController
-/**
- * Updates session statuses based on current time.
- * Can be called manually from admin dashboard
- */
-public function updateSessionStatus()
-{
-    if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
-        return redirect()->to(base_url('login'))->with('error', 'Not authorized');
-    }
-    
-    $now = date('Y-m-d H:i:s');
-    $updatedCount = 0;
-    $skippedCount = 0;
-    
-    try {
-        // Update sessions with attendances to 'selesai'
-        $expiredWithAttendanceSessions = $this->sesiModel->builder()
-            ->where('status', 'aktif')
-            ->where('waktu_selesai_aktual <', $now)
-            ->where("EXISTS (SELECT 1 FROM kehadiran WHERE kehadiran.id_sesi = sesi_absensi.id_sesi)")
-            ->get()
-            ->getResultArray();
-            
-        foreach ($expiredWithAttendanceSessions as $session) {
-            $this->sesiModel->update($session['id_sesi'], ['status' => 'selesai']);
-            $updatedCount++;
+    /**
+     * Updates session statuses based on current time.
+     * Can be called manually from admin dashboard
+     */
+    public function updateSessionStatus()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('login'))->with('error', 'Not authorized');
         }
-        
-        // Update sessions without attendances to 'terlewat'
-        $expiredWithoutAttendanceSessions = $this->sesiModel->builder()
-            ->where('status', 'aktif')
-            ->where('waktu_selesai_aktual <', $now)
-            ->where("NOT EXISTS (SELECT 1 FROM kehadiran WHERE kehadiran.id_sesi = sesi_absensi.id_sesi)")
-            ->get()
-            ->getResultArray();
-            
-        foreach ($expiredWithoutAttendanceSessions as $session) {
-            $this->sesiModel->update($session['id_sesi'], ['status' => 'terlewat']);
-            $skippedCount++;
+
+        $now = date('Y-m-d H:i:s');
+        $updatedCount = 0;
+        $skippedCount = 0;
+
+        try {
+            // Update sessions with attendances to 'selesai'
+            $expiredWithAttendanceSessions = $this->sesiModel->builder()
+                ->where('status', 'aktif')
+                ->where('waktu_selesai_aktual <', $now)
+                ->where("EXISTS (SELECT 1 FROM kehadiran WHERE kehadiran.id_sesi = sesi_absensi.id_sesi)")
+                ->get()
+                ->getResultArray();
+
+            foreach ($expiredWithAttendanceSessions as $session) {
+                $this->sesiModel->update($session['id_sesi'], ['status' => 'selesai']);
+                $updatedCount++;
+            }
+
+            // Update sessions without attendances to 'terlewat'
+            $expiredWithoutAttendanceSessions = $this->sesiModel->builder()
+                ->where('status', 'aktif')
+                ->where('waktu_selesai_aktual <', $now)
+                ->where("NOT EXISTS (SELECT 1 FROM kehadiran WHERE kehadiran.id_sesi = sesi_absensi.id_sesi)")
+                ->get()
+                ->getResultArray();
+
+            foreach ($expiredWithoutAttendanceSessions as $session) {
+                $this->sesiModel->update($session['id_sesi'], ['status' => 'terlewat']);
+                $skippedCount++;
+            }
+
+            // Log the action
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity(
+                $this->session->get('id_user'),
+                $this->session->get('reference_id'),
+                'admin',
+                'update_sessions',
+                "Updated {$updatedCount} completed sessions and {$skippedCount} skipped sessions",
+                'sesi_absensi',
+                null
+            );
+
+            return redirect()->to(base_url('admin/dashboard'))
+                ->with('success', "Status sesi berhasil diperbarui: {$updatedCount} sesi selesai, {$skippedCount} sesi terlewat");
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error updating session status: ' . $e->getMessage());
+            return redirect()->to(base_url('admin/dashboard'))
+                ->with('error', 'Terjadi kesalahan saat memperbarui status sesi');
         }
-        
-        // Log the action
-        $activityLogModel = new \App\Models\ActivityLogModel();
-        $activityLogModel->logActivity(
-            $this->session->get('id_user'),
-            $this->session->get('reference_id'),
-            'admin',
-            'update_sessions',
-            "Updated {$updatedCount} completed sessions and {$skippedCount} skipped sessions",
-            'sesi_absensi',
-            null
-        );
-        
-        return redirect()->to(base_url('admin/dashboard'))
-            ->with('success', "Status sesi berhasil diperbarui: {$updatedCount} sesi selesai, {$skippedCount} sesi terlewat");
-            
-    } catch (\Exception $e) {
-        log_message('error', 'Error updating session status: ' . $e->getMessage());
-        return redirect()->to(base_url('admin/dashboard'))
-            ->with('error', 'Terjadi kesalahan saat memperbarui status sesi');
     }
-}
 
     public function deleteMhs(string $nim)
     {
